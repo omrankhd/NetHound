@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<?xml-stylesheet href="file:///usr/share/nmap/nmap.xsl" type="text/xsl"?>
+<!-- Nmap 7.95 scan initiated Mon Apr 28 18:40:27 2025 as: /usr/lib/nmap/nmap -vvv -p 21,22,23,53,5431,7547 -4 -Pn -sV -oX result.xml 192.168.1.1 -->
+<nmaprun scanner="nmap" args="/usr/lib/nmap/nmap -vvv -p 21,22,23,53,5431,7547 -4 -Pn -sV -oX result.xml 192.168.1.1" start="1745862027" startstr="Mon Apr 28 18:40:27 2025" version="7.95" xmloutputversion="1.05">
+<scaninfo type="syn" protocol="tcp" numservices="6" services="21-23,53,5431,7547"/>
+<verbose level="3"/>
+<debugging level="0"/>
+<taskbegin task="ARP Ping Scan" time="1745862027"/>
+<hosthint><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="192.168.1.1" addrtype="ipv4"/>
+<address addr="A0:18:42:9E:90:99" addrtype="mac" vendor="Comtrend"/>
+<hostnames>
+</hostnames>
+</hosthint>
+<taskend task="ARP Ping Scan" time="1745862027" extrainfo="1 total hosts"/>
+<taskbegin task="Parallel DNS resolution of 1 host." time="1745862027"/>
+<taskend task="Parallel DNS resolution of 1 host." time="1745862030"/>
+<taskbegin task="SYN Stealth Scan" time="1745862030"/>
+<taskend task="SYN Stealth Scan" time="1745862030" extrainfo="6 total ports"/>
+<taskbegin task="Service scan" time="1745862030"/>
+<taskend task="Service scan" time="1745862191" extrainfo="6 services on 1 host"/>
+<taskbegin task="NSE" time="1745862191"/>
+<taskend task="NSE" time="1745862192"/>
+<taskbegin task="NSE" time="1745862192"/>
+<taskend task="NSE" time="1745862193"/>
+<host starttime="1745862030" endtime="1745862193"><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="192.168.1.1" addrtype="ipv4"/>
+<address addr="A0:18:42:9E:90:99" addrtype="mac" vendor="Comtrend"/>
+<hostnames>
+</hostnames>
+<ports><port protocol="tcp" portid="21"><state state="open" reason="syn-ack" reason_ttl="30"/><service name="ftp" servicefp="SF-Port21-TCP:V=7.95%I=7%D=4/28%Time=680FBD94%P=x86_64-pc-linux-gnu%r(NULL,25,&quot;220\x20FTP\x20server\x20\(192\.168\.1\.1\)\x20ready\.\r\n&quot;)%r(GenericLines,3E,&quot;220\x20FTP\x20server\x20\(192\.168\.1\.1\)\x20ready\.\r\n500\x20Unknown\x20command:\x20\&quot;\&quot;\r\n&quot;)%r(Help,39,&quot;220\x20FTP\x20server\x20\(192\.168\.1\.1\)\x20ready\.\r\n503\x20USER\x20expected\.\r\n&quot;)%r(SSLSessionReq,3E,&quot;220\x20FTP\x20server\x20\(192\.168\.1\.1\)\x20ready\.\r\n500\x20Unknown\x20command:\x20\&quot;\&quot;\r\n&quot;)%r(SMBProgNeg,3E,&quot;220\x20FTP\x20server\x20\(192\.168\.1\.1\)\x20ready\.\r\n500\x20Unknown\x20command:\x20\&quot;\&quot;\r\n&quot;);" method="probed" conf="10"/></port>
+<port protocol="tcp" portid="22"><state state="open" reason="syn-ack" reason_ttl="30"/><service name="ssh" extrainfo="protocol 2.0" servicefp="SF-Port22-TCP:V=7.95%I=7%D=4/28%Time=680FBD8F%P=x86_64-pc-linux-gnu%r(NULL,13,&quot;SSH-2\.0-SSHDaemon\r\n&quot;);" method="probed" conf="10"/></port>
+<port protocol="tcp" portid="23"><state state="open" reason="syn-ack" reason_ttl="30"/><service name="telnet" product="D-Link router telnetd" devicetype="broadband router" method="probed" conf="10"/></port>
+<port protocol="tcp" portid="53"><state state="open" reason="syn-ack" reason_ttl="30"/><service name="domain" method="table" conf="3"/></port>
+<port protocol="tcp" portid="5431"><state state="open" reason="syn-ack" reason_ttl="30"/><service name="upnp" product="MiniUPnP" method="probed" conf="10"><cpe>cpe:/a:miniupnp_project:miniupnpd</cpe></service></port>
+<port protocol="tcp" portid="7547"><state state="open" reason="syn-ack" reason_ttl="30"/><service name="soap" product="gSOAP" version="2.7" method="probed" conf="10"><cpe>cpe:/a:genivia:gsoap:2.7</cpe></service></port>
+</ports>
+<times srtt="4644" rttvar="2302" to="100000"/>
+</host>
+<runstats><finished time="1745862193" timestr="Mon Apr 28 18:43:13 2025" summary="Nmap done at Mon Apr 28 18:43:13 2025; 1 IP address (1 host up) scanned in 166.50 seconds" elapsed="166.50" exit="success"/><hosts up="1" down="0" total="1"/>
+</runstats>
+</nmaprun>
