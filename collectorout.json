@@ -1,0 +1,95 @@
+[
+    {
+        "ip": "10.217.192.1",
+        "ftp_anonymous": false,
+        "telnet_guest": false,
+        "services": [
+            {
+                "port": 53,
+                "protocol": "tcp",
+                "service": "domain",
+                "product": "dnsmasq",
+                "version": "2.87",
+                "cves": []
+            },
+            {
+                "port": 80,
+                "protocol": "tcp",
+                "service": "http",
+                "product": null,
+                "version": null,
+                "cves": []
+            },
+            {
+                "port": 5400,
+                "protocol": "tcp",
+                "service": "domain",
+                "product": "Unbound",
+                "version": null,
+                "cves": []
+            },
+            {
+                "port": 8090,
+                "protocol": "tcp",
+                "service": "opsmessaging",
+                "product": null,
+                "version": null,
+                "cves": []
+            }
+        ]
+    },
+    {
+        "ip": "10.217.192.2",
+        "ftp_anonymous": false,
+        "telnet_guest": false,
+        "services": [
+            {
+                "port": 22,
+                "protocol": "tcp",
+                "service": "ssh",
+                "product": "Cisco/3com IPSSHd",
+                "version": "6.6.0",
+                "cves": []
+            },
+            {
+                "port": 80,
+                "protocol": "tcp",
+                "service": "http",
+                "product": "TP-LINK router http config",
+                "version": null,
+                "cves": []
+            },
+            {
+                "port": 1900,
+                "protocol": "tcp",
+                "service": "upnp",
+                "product": "TP-LINK router upnpd",
+                "version": null,
+                "cves": []
+            }
+        ]
+    },
+    {
+        "ip": "10.217.192.3",
+        "ftp_anonymous": true,
+        "telnet_guest": false,
+        "services": [
+            {
+                "port": 2121,
+                "protocol": "tcp",
+                "service": "ftp",
+                "product": "SwiFTP",
+                "version": "V1-230648",
+                "cves": []
+            },
+            {
+                "port": 8080,
+                "protocol": "tcp",
+                "service": "http-proxy",
+                "product": "b",
+                "version": null,
+                "cves": []
+            }
+        ]
+    }
+]

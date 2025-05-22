@@ -1,0 +1,35 @@
+<table>
+    <thead><tr>
+        <th>Name</th>
+        <th class="hide-on-small-only">Type</th>
+        <th class="hide-on-small-only">Details</th>
+    </tr></thead>
+    <tbody>
+
+        <!-- Folders -->
+        {% for folder in folders %}
+        <tr>
+            <td>
+                <b><a class="orange-text" href="{% url 'file_browser' folder.href %}"><i class="fas fa-folder-open"></i> {{ folder.name }}</a></b>
+            </td>
+            <td class="hide-on-small-only">Folder</td>
+            <td class="hide-on-small-only">—</td>
+        </tr>
+        {% endfor %}
+
+        <!-- Files -->
+        {% for v in files %}
+        <tr>
+            <td><b><a class="blue-text" href="{{ v.href }}">{{ v.filename|safe }}</a></b></td>
+            <td class="hide-on-small-only">File</td>
+            <td class="hide-on-small-only">
+                <code>{{ v.startstr }}</code> | Hosts: {{ v.hostnum }} |
+                <i class="fas fa-door-open green-text"></i><span class="green-text">{{ v.portstats.po }}</span>
+                <i class="fas fa-door-closed red-text"></i><span class="red-text">{{ v.portstats.pc }}</span>
+                <i class="fas fa-filter grey-text"></i><span class="grey-text">{{ v.portstats.pf }}</span>
+            </td>
+        </tr>
+        {% endfor %}
+
+    </tbody>
+</table>

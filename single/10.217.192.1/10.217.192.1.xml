@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<?xml-stylesheet href="file:///usr/share/nmap/nmap.xsl" type="text/xsl"?>
+<!-- Nmap 7.95 scan initiated Tue May 20 17:31:19 2025 as: /usr/lib/nmap/nmap -vvv -p 53,80,5400,8090 -4 -Pn -sV -oX single/10.217.192.1/10.217.192.1.xml 10.217.192.1 -->
+<nmaprun scanner="nmap" args="/usr/lib/nmap/nmap -vvv -p 53,80,5400,8090 -4 -Pn -sV -oX single/10.217.192.1/10.217.192.1.xml 10.217.192.1" start="1747758679" startstr="Tue May 20 17:31:19 2025" version="7.95" xmloutputversion="1.05">
+<scaninfo type="syn" protocol="tcp" numservices="4" services="53,80,5400,8090"/>
+<verbose level="3"/>
+<debugging level="0"/>
+<taskbegin task="ARP Ping Scan" time="1747758679"/>
+<hosthint><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="10.217.192.1" addrtype="ipv4"/>
+<address addr="C4:8B:A3:4D:FD:29" addrtype="mac" vendor="Cisco Meraki"/>
+<hostnames>
+</hostnames>
+</hosthint>
+<taskend task="ARP Ping Scan" time="1747758679" extrainfo="1 total hosts"/>
+<taskbegin task="Parallel DNS resolution of 1 host." time="1747758680"/>
+<taskend task="Parallel DNS resolution of 1 host." time="1747758680"/>
+<taskbegin task="SYN Stealth Scan" time="1747758680"/>
+<taskend task="SYN Stealth Scan" time="1747758680" extrainfo="4 total ports"/>
+<taskbegin task="Service scan" time="1747758680"/>
+<taskend task="Service scan" time="1747758739" extrainfo="4 services on 1 host"/>
+<taskbegin task="NSE" time="1747758739"/>
+<taskend task="NSE" time="1747758739"/>
+<taskbegin task="NSE" time="1747758739"/>
+<taskend task="NSE" time="1747758741"/>
+<host starttime="1747758680" endtime="1747758741"><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="10.217.192.1" addrtype="ipv4"/>
+<address addr="C4:8B:A3:4D:FD:29" addrtype="mac" vendor="Cisco Meraki"/>
+<hostnames>
+<hostname name="my.meraki.net" type="PTR"/>
+</hostnames>
+<ports><port protocol="tcp" portid="53"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="domain" product="dnsmasq" version="2.87" method="probed" conf="10"><cpe>cpe:/a:thekelleys:dnsmasq:2.87</cpe></service></port>
+<port protocol="tcp" portid="80"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="http" servicefp="SF-Port80-TCP:V=7.95%I=7%D=5/20%Time=682CAE5E%P=x86_64-pc-linux-gnu%r(GetRequest,21F0,&quot;HTTP/1\.0\x20200\x20OK\r\nContent-Type:\x20text/html\r\nLast-Modified:\x20Fri,\x2031\x20Jan\x202025\x2021:22:37\x20GMT\r\nContent-Length:\x20100430\r\nCache-Control:\x20no-store,\x20no-cache,\x20must-revalidate,\x20post-check=0,\x20pre-check=0\r\nX-Frame-Options:\x20deny\r\nConnection:\x20close\r\n\r\n&lt;!DOCTYPE\x20html&gt;\n&lt;!-&#45;\[if\x20lt\x20IE\x207\]&gt;\x20\x20\x20\x20\x20\x20&lt;html\x20class=\&quot;no-js\x20lt-ie9\x20lt-ie8\x20lt-ie7\&quot;&gt;\x20&lt;!\[endif\]-&#45;&gt;\n&lt;!-&#45;\[if\x20IE\x207\]&gt;\x20\x20\x20\x20\x20\x20\x20\x20\x20&lt;html\x20class=\&quot;no-js\x20lt-ie9\x20lt-ie8\&quot;&gt;\x20&lt;!\[endif\]-&#45;&gt;\n&lt;!-&#45;\[if\x20IE\x208\]&gt;\x20\x20\x20\x20\x20\x20\x20\x20\x20&lt;html\x20class=\&quot;no-js\x20lt-ie9\&quot;&gt;\x20&lt;!\[endif\]-&#45;&gt;\n&lt;!-&#45;\[if\x20gt\x20IE\x208\]&gt;&lt;!-&#45;&gt;\n&lt;html\x20class=\&quot;no-js\&quot;&gt;\x20&lt;!-&#45;&lt;!\[endif\]-&#45;&gt;\n\x20\x20\x20\x20&lt;head&gt;\n\x20\x20\x20\x20\x20\x20\x20\x20&lt;meta\x20charset=\&quot;utf-8\&quot;&gt;\n\x20\x20\x20\x20\x20\x20\x20\x20&lt;meta\x20http-equiv=\&quot;X-UA-Compatible\&quot;\x20content=\&quot;IE=edge,chrome=1\&quot;&gt;\n\x20\x20\x20\x20\x20\x20\x20\x20&lt;title&gt;&lt;/title&gt;\n\x20\x20\x20\x20\x20\x20\x20\x20&lt;meta\x20name=\&quot;description\&quot;\x20content=\&quot;\&quot;&gt;\n\x20\x20\x20\x20\x20\x20\x20\x20&lt;meta\x20name=\&quot;viewport\&quot;\x20content=\&quot;width=device-width\&quot;&gt;\n\x20\x20\x20\x20\x20\x20\x20\x20&lt;link\x20rel=\&quot;stylesheet\&quot;\x20href=\&quot;css/normalize\.css\&quot;&gt;\n\x20\x20\x20\x20\x20\x20\x20\x20&lt;link\x20rel=\&quot;stylesheet\&quot;\x20href=\&quot;css/main\.css\&quot;&gt;\n\x20\x20\x20\x20\x20\x20\x20\x20&lt;script\x20src=\&quot;thi&quot;)%r(HTTPOptions,C0,&quot;HTTP/1\.0\x20200\x20OK\r\nAllow:\x20OPTIONS,\x20GET,\x20HEAD,\x20POST\r\nCache-Control:\x20no-store,\x20no-cache,\x20must-revalidate,\x20post-check=0,\x20pre-check=0\r\nX-Frame-Options:\x20deny\r\nContent-Length:\x200\r\nConnection:\x20close\r\n\r\n&quot;)%r(RTSPRequest,1B6,&quot;HTTP/1\.0\x20400\x20Bad\x20Request\r\nContent-Type:\x20text/html\r\nContent-Length:\x20345\r\nConnection:\x20close\r\n\r\n&lt;\?xml\x20version=\&quot;1\.0\&quot;\x20encoding=\&quot;iso-8859-1\&quot;\?&gt;\n&lt;!DOCTYPE\x20html\x20PUBLIC\x20\&quot;-//W3C//DTD\x20XHTML\x201\.0\x20Transitional//EN\&quot;\n\x20\x20\x20\x20\x20\x20\x20\x20\x20\&quot;http://www\.w3\.org/TR/xhtml1/DTD/xhtml1-transitional\.dtd\&quot;&gt;\n&lt;html\x20xmlns=\&quot;http://www\.w3\.org/1999/xhtml\&quot;\x20xml:lang=\&quot;en\&quot;\x20lang=\&quot;en\&quot;&gt;\n\x20&lt;head&gt;\n\x20\x20&lt;title&gt;400\x20Bad\x20Request&lt;/title&gt;\n\x20&lt;/head&gt;\n\x20&lt;body&gt;\n\x20\x20&lt;h1&gt;400\x20Bad\x20Request&lt;/h1&gt;\n\x20&lt;/body&gt;\n&lt;/html&gt;\n&quot;);" method="probed" conf="10"/></port>
+<port protocol="tcp" portid="5400"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="domain" product="Unbound" method="probed" conf="10"><cpe>cpe:/a:nlnetlabs:unbound</cpe></service></port>
+<port protocol="tcp" portid="8090"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="opsmessaging" servicefp="SF-Port8090-TCP:V=7.95%I=7%D=5/20%Time=682CAE5E%P=x86_64-pc-linux-gnu%r(GenericLines,1B6,&quot;HTTP/1\.0\x20400\x20Bad\x20Request\r\nContent-Type:\x20text/html\r\nContent-Length:\x20345\r\nConnection:\x20close\r\n\r\n&lt;\?xml\x20version=\&quot;1\.0\&quot;\x20encoding=\&quot;iso-8859-1\&quot;\?&gt;\n&lt;!DOCTYPE\x20html\x20PUBLIC\x20\&quot;-//W3C//DTD\x20XHTML\x201\.0\x20Transitional//EN\&quot;\n\x20\x20\x20\x20\x20\x20\x20\x20\x20\&quot;http://www\.w3\.org/TR/xhtml1/DTD/xhtml1-transitional\.dtd\&quot;&gt;\n&lt;html\x20xmlns=\&quot;http://www\.w3\.org/1999/xhtml\&quot;\x20xml:lang=\&quot;en\&quot;\x20lang=\&quot;en\&quot;&gt;\n\x20&lt;head&gt;\n\x20\x20&lt;title&gt;400\x20Bad\x20Request&lt;/title&gt;\n\x20&lt;/head&gt;\n\x20&lt;body&gt;\n\x20\x20&lt;h1&gt;400\x20Bad\x20Request&lt;/h1&gt;\n\x20&lt;/body&gt;\n&lt;/html&gt;\n&quot;)%r(GetRequest,448,&quot;HTTP/1\.0\x20200\x20OK\r\nContent-Type:\x20text/html\r\nLast-Modified:\x20Fri,\x2031\x20Jan\x202025\x2021:22:37\x20GMT\r\nContent-Length:\x20864\r\nCache-Control:\x20no-store,\x20no-cache,\x20must-revalidate,\x20post-check=0,\x20pre-check=0\r\nX-Frame-Options:\x20deny\r\nConnection:\x20close\r\n\r\n&lt;html&gt;\n&lt;head&gt;\n&lt;title&gt;Error&lt;/title&gt;\n&lt;/head&gt;\n\n&lt;style\x20type=\&quot;text/css\&quot;&gt;\n&lt;!-&#45;\ndiv\x20{\n\tpadding-top:\x208px;\n\tpadding-bottom:\x208px;\n}\na\x20{\n\tcolor:\x20#28A30F;\n}\n\.type_style1\x20{\n\tfont-size:\x2030px;\n\tcolor:\x20#333333;\n\tfont-family:\x20Arial,\x20Helvetica,\x20sans-serif;\n}\n\.type_style2\x20{\n\tfont-size:\x2012px;\n\tcolor:\x20333333;\n\tfont-family:\x20Arial,\x20Helvetica,\x20sans-serif;\n}\n\.type_style3\x20{\n\tfont-size:\x2012px;\n\tcolor:\x20999999;\n\tfont-family:\x20Arial,\x20Helvetica,\x20sans-serif;\n}\n-&#45;&gt;\n&lt;/style&gt;\n\n&lt;body\x20topmargin=\&quot;0\&quot;\x20bottommargin=\&quot;0\&quot;\x20marginheight=\&quot;0\&quot;&gt;\n&lt;table\x20width=\&quot;760\&quot;\x20border=\&quot;0\&quot;\x20align=\&quot;center\&quot;\x20cellpadding=\&quot;0\&quot;\x20cellspacing=\&quot;0\&quot;&gt;\n\x20\x20&lt;tr&gt;\n\x20\x20\x20\x20&lt;td\x20height=\&quot;84\&quot;\x20valign=\&quot;middle\&quot;&gt;&lt;img\x20src=\&quot;images/logo\.png\&quot;\x20alt=\&quot;Cisco\x20Systems,\x20&quot;)%r(HTTPOptions,C0,&quot;HTTP/1\.0\x20200\x20OK\r\nAllow:\x20OPTIONS,\x20GET,\x20HEAD,\x20POST\r\nCache-Control:\x20no-store,\x20no-cache,\x20must-revalidate,\x20post-check=0,\x20pre-check=0\r\nX-Frame-Options:\x20deny\r\nContent-Length:\x200\r\nConnection:\x20close\r\n\r\n&quot;);" method="table" conf="3"/></port>
+</ports>
+<times srtt="150412" rttvar="213762" to="1005460"/>
+</host>
+<runstats><finished time="1747758741" timestr="Tue May 20 17:32:21 2025" summary="Nmap done at Tue May 20 17:32:21 2025; 1 IP address (1 host up) scanned in 62.22 seconds" elapsed="62.22" exit="success"/><hosts up="1" down="0" total="1"/>
+</runstats>
+</nmaprun>

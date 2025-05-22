@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<?xml-stylesheet href="file:///usr/share/nmap/nmap.xsl" type="text/xsl"?>
+<!-- Nmap 7.95 scan initiated Mon May  5 09:57:03 2025 as: /usr/lib/nmap/nmap -vvv -p 49152,62078 -4 -Pn -sV -oX /opt/nmapdashboard/192.168.120.0_24/temp_192_168_120_13.xml 192.168.120.13 -->
+<nmaprun scanner="nmap" args="/usr/lib/nmap/nmap -vvv -p 49152,62078 -4 -Pn -sV -oX /opt/nmapdashboard/192.168.120.0_24/temp_192_168_120_13.xml 192.168.120.13" start="1746435423" startstr="Mon May  5 09:57:03 2025" version="7.95" xmloutputversion="1.05">
+<scaninfo type="syn" protocol="tcp" numservices="2" services="49152,62078"/>
+<verbose level="3"/>
+<debugging level="0"/>
+<taskbegin task="ARP Ping Scan" time="1746435423"/>
+<hosthint><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="192.168.120.13" addrtype="ipv4"/>
+<address addr="A2:FD:DA:D7:14:7B" addrtype="mac"/>
+<hostnames>
+</hostnames>
+</hosthint>
+<taskend task="ARP Ping Scan" time="1746435423" extrainfo="1 total hosts"/>
+<taskbegin task="Parallel DNS resolution of 1 host." time="1746435423"/>
+<taskend task="Parallel DNS resolution of 1 host." time="1746435423"/>
+<taskbegin task="SYN Stealth Scan" time="1746435423"/>
+<taskend task="SYN Stealth Scan" time="1746435423" extrainfo="2 total ports"/>
+<taskbegin task="Service scan" time="1746435424"/>
+<taskend task="Service scan" time="1746435424" extrainfo="2 services on 1 host"/>
+<taskbegin task="NSE" time="1746435424"/>
+<taskend task="NSE" time="1746435424"/>
+<taskbegin task="NSE" time="1746435424"/>
+<taskend task="NSE" time="1746435424"/>
+<host starttime="1746435423" endtime="1746435424"><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="192.168.120.13" addrtype="ipv4"/>
+<address addr="A2:FD:DA:D7:14:7B" addrtype="mac"/>
+<hostnames>
+</hostnames>
+<ports><port protocol="tcp" portid="49152"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="tcpwrapped" method="probed" conf="8"/></port>
+<port protocol="tcp" portid="62078"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="tcpwrapped" method="probed" conf="8"/></port>
+</ports>
+<times srtt="83242" rttvar="71814" to="370498"/>
+</host>
+<runstats><finished time="1746435424" timestr="Mon May  5 09:57:04 2025" summary="Nmap done at Mon May  5 09:57:04 2025; 1 IP address (1 host up) scanned in 1.56 seconds" elapsed="1.56" exit="success"/><hosts up="1" down="0" total="1"/>
+</runstats>
+</nmaprun>

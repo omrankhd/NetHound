@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<?xml-stylesheet href="file:///usr/share/nmap/nmap.xsl" type="text/xsl"?>
+<!-- Nmap 7.95 scan initiated Mon May  5 10:08:31 2025 as: /usr/lib/nmap/nmap -vvv -p 1947,37045,39632,44676,57621 -4 -Pn -sV -oX /opt/nmapdashboard/192.168.120.0_24/temp_192_168_120_250.xml 192.168.120.250 -->
+<nmaprun scanner="nmap" args="/usr/lib/nmap/nmap -vvv -p 1947,37045,39632,44676,57621 -4 -Pn -sV -oX /opt/nmapdashboard/192.168.120.0_24/temp_192_168_120_250.xml 192.168.120.250" start="1746436111" startstr="Mon May  5 10:08:31 2025" version="7.95" xmloutputversion="1.05">
+<scaninfo type="syn" protocol="tcp" numservices="5" services="1947,37045,39632,44676,57621"/>
+<verbose level="3"/>
+<debugging level="0"/>
+<taskbegin task="Parallel DNS resolution of 1 host." time="1746436111"/>
+<taskend task="Parallel DNS resolution of 1 host." time="1746436124"/>
+<taskbegin task="SYN Stealth Scan" time="1746436124"/>
+<taskend task="SYN Stealth Scan" time="1746436124" extrainfo="5 total ports"/>
+<taskbegin task="Service scan" time="1746436124"/>
+<taskend task="Service scan" time="1746436238" extrainfo="3 services on 1 host"/>
+<taskbegin task="NSE" time="1746436238"/>
+<taskend task="NSE" time="1746436238"/>
+<taskbegin task="NSE" time="1746436238"/>
+<taskend task="NSE" time="1746436239"/>
+<host starttime="1746436124" endtime="1746436239"><status state="up" reason="user-set" reason_ttl="0"/>
+<address addr="192.168.120.250" addrtype="ipv4"/>
+<hostnames>
+</hostnames>
+<ports><port protocol="tcp" portid="1947"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="sentinelsrm" servicefp="SF-Port1947-TCP:V=7.95%I=7%D=5/5%Time=68188022%P=x86_64-pc-linux-gnu%r(GetRequest,2A1,&quot;HTTP/1\.0\x20302\x20Moved\r\nServer:\x20HASP\x20LM/30\.01\r\nDate:\x20Mon,\x2005\x20May\x202025\x2009:08:50\x20GMT\r\nX-Robots-Tag:\x20noindex,\x20nofollow\r\nX-Frame-Options:\x20SAMEORIGIN\r\nStrict-Transport-Security:\x20max-age=0;\r\nX-Content-Type-Options:\x20nosniff\r\nReferrer-Policy:\x20strict-origin\r\nContent-Security-Policy:\x20default-src\x20&apos;self&apos;\x20&apos;unsafe-inline&apos;\x20&apos;unsafe-eval&apos;\r\nX-XSS-Protection:\x201;\x20mode=block\r\nLocation:\x20/_int_/devices\.html\r\nContent-Type:\x20text/html\r\nContent-Length:\x20106\r\nX-LDK-Instance:\x20053df66606c911eb\r\nX-LDK-Version:\x2010\.12\r\nX-LDK-Build:\x2030\.1\.1\.169645\r\nX-LDK-Trace-Id:\x20b56f1f60ffbafb9489c889f723f4a12c\r\n\r\n&lt;title&gt;302\x20Moved&lt;/title&gt;\n&lt;h1&gt;302\x20Moved&lt;/h1&gt;\nThis\x20document\x20has\x20moved\.\n&lt;p&gt;Please\x20contact\x20the\x20administrator\.\n&quot;)%r(HTTPOptions,388,&quot;HTTP/1\.0\x20403\x20Forbidden\r\nServer:\x20HASP\x20LM/30\.01\r\nDate:\x20Mon,\x2005\x20May\x202025\x2009:08:50\x20GMT\r\nAccess-Control-Allow-Methods:\x20POST,\x20GET,\x20OPTIONS\r\nAccess-Control-Allow-Headers:\x20Origin,\x20X-Requested-With,\x20Content-Type,\x20Accept,\x20Authorization\r\nAccess-Control-Allow-Credentials:\x20true\r\nAccess-Control-Allow-Private-Network:\x20true\r\nX-Robots-Tag:\x20noindex,\x20nofollow\r\nX-Frame-Options:\x20SAMEORIGIN\r\nStrict-Transport-Security:\x20max-age=0;\r\nX-Content-Type-Options:\x20nosniff\r\nReferrer-Policy:\x20strict-origin\r\nContent-Security-Policy:\x20default-src\x20&apos;self&apos;\x20&apos;unsafe-inline&apos;\x20&apos;unsafe-eval&apos;\r\nX-XSS-Protection:\x201;\x20mode=block\r\nContent-Type:\x20text/html\r\nContent-Length:\x20137\r\nX-LDK-Instance:\x20053df66606c911eb\r\nX-LDK-Version:\x2010\.12\r\nX-LDK-Build:\x2030\.1\.1\.169645\r\nX-LDK-Trace-Id:\x202f57dd056c51d75a9cf39c5e436f0e00\r\n\r\n&lt;title&gt;403\x20Forbidden&lt;/title&gt;\n&lt;h1&gt;403\x20Forbidden&lt;/h1&gt;\nAccess\x20to\x20this\x20resource\x20has\x20been\x20denied\x20to\x20you\.\n&lt;p&gt;Please\x20contact\x20the\x20administrat&quot;)%r(RTSPRequest,3DD,&quot;HTTP/1\.1\x20505\x20HTTP\x20Version\x20Not\x20Supported\r\nServer:\x20HASP\x20LM/30\.01\r\nDate:\x20Mon,\x2005\x20May\x202025\x2009:08:50\x20GMT\r\nAccess-Control-Allow-Methods:\x20POST,\x20GET,\x20OPTIONS\r\nAccess-Control-Allow-Headers:\x20Origin,\x20X-Requested-With,\x20Content-Type,\x20Accept,\x20Authorization\r\nAccess-Control-Allow-Credentials:\x20true\r\nAccess-Control-Allow-Private-Network:\x20true\r\nX-Robots-Tag:\x20noindex,\x20nofollow\r\nX-Frame-Options:\x20SAMEORIGIN\r\nStrict-Transport-Security:\x20max-age=0;\r\nX-Content-Type-Options:\x20nosniff\r\nReferrer-Policy:\x20strict-origin\r\nContent-Security-Policy:\x20default-src\x20&apos;self&apos;\x20&apos;unsafe-inline&apos;\x20&apos;unsafe-eval&apos;\r\nX-XSS-Protection:\x201;\x20mode=block\r\nContent-Type:\x20text/html\r\nContent-Length:\x20186\r\nConnection:\x20close\r\nX-LDK-Instance:\x20053df66606c911eb\r\nX-LDK-Version:\x2010\.12\r\nX-LDK-Build:\x2030\.1\.1\.169645\r\nX-LDK-Trace-Id:\x2074ba78780dec6739b90dc4bcc7a23cc9\r\n\r\n&lt;title&gt;505\x20HTTP\x20Version\x20Not\x20Supported&lt;/title&gt;\n&lt;h1&gt;505\x20HTTP\x20Version\x20Not\x20Supported&lt;/h1&gt;\nYour\x20reques&quot;);" method="table" conf="3"/></port>
+<port protocol="tcp" portid="37045"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="unknown" servicefp="SF-Port37045-TCP:V=7.95%I=7%D=5/5%Time=6818801C%P=x86_64-pc-linux-gnu%r(NULL,22,&quot;{\&quot;type\&quot;:\&quot;Tier1\&quot;,\&quot;version\&quot;:\&quot;1\.0\&quot;}\r\n&quot;);" method="table" conf="3"/></port>
+<port protocol="tcp" portid="39632"><state state="closed" reason="reset" reason_ttl="64"/></port>
+<port protocol="tcp" portid="44676"><state state="closed" reason="reset" reason_ttl="64"/></port>
+<port protocol="tcp" portid="57621"><state state="open" reason="syn-ack" reason_ttl="64"/></port>
+</ports>
+<times srtt="45" rttvar="1604" to="100000"/>
+</host>
+<runstats><finished time="1746436239" timestr="Mon May  5 10:10:39 2025" summary="Nmap done at Mon May  5 10:10:39 2025; 1 IP address (1 host up) scanned in 128.25 seconds" elapsed="128.25" exit="success"/><hosts up="1" down="0" total="1"/>
+</runstats>
+</nmaprun>

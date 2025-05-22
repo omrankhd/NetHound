@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<?xml-stylesheet href="file:///usr/share/nmap/nmap.xsl" type="text/xsl"?>
+<!-- Nmap 7.95 scan initiated Tue May 20 14:43:46 2025 as: /usr/lib/nmap/nmap -vvv -p 22,80,1900 -4 -Pn -sV -oX testtt2/10.217.192.0_30/10.217.192.2.xml 10.217.192.2 -->
+<nmaprun scanner="nmap" args="/usr/lib/nmap/nmap -vvv -p 22,80,1900 -4 -Pn -sV -oX testtt2/10.217.192.0_30/10.217.192.2.xml 10.217.192.2" start="1747748626" startstr="Tue May 20 14:43:46 2025" version="7.95" xmloutputversion="1.05">
+<scaninfo type="syn" protocol="tcp" numservices="3" services="22,80,1900"/>
+<verbose level="3"/>
+<debugging level="0"/>
+<taskbegin task="ARP Ping Scan" time="1747748626"/>
+<hosthint><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="10.217.192.2" addrtype="ipv4"/>
+<address addr="6C:5A:B0:CF:24:88" addrtype="mac" vendor="TP-Link Limited"/>
+<hostnames>
+</hostnames>
+</hosthint>
+<taskend task="ARP Ping Scan" time="1747748626" extrainfo="1 total hosts"/>
+<taskbegin task="Parallel DNS resolution of 1 host." time="1747748626"/>
+<taskend task="Parallel DNS resolution of 1 host." time="1747748626"/>
+<taskbegin task="SYN Stealth Scan" time="1747748626"/>
+<taskend task="SYN Stealth Scan" time="1747748626" extrainfo="3 total ports"/>
+<taskbegin task="Service scan" time="1747748626"/>
+<taskend task="Service scan" time="1747748631" extrainfo="3 services on 1 host"/>
+<taskbegin task="NSE" time="1747748631"/>
+<taskend task="NSE" time="1747748631"/>
+<taskbegin task="NSE" time="1747748631"/>
+<taskend task="NSE" time="1747748631"/>
+<host starttime="1747748626" endtime="1747748631"><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="10.217.192.2" addrtype="ipv4"/>
+<address addr="6C:5A:B0:CF:24:88" addrtype="mac" vendor="TP-Link Limited"/>
+<hostnames>
+</hostnames>
+<ports><port protocol="tcp" portid="22"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="ssh" product="Cisco/3com IPSSHd" version="6.6.0" extrainfo="protocol 2.0" method="probed" conf="10"/></port>
+<port protocol="tcp" portid="80"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="http" product="TP-LINK router http config" method="probed" conf="10"/></port>
+<port protocol="tcp" portid="1900"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="upnp" product="TP-LINK router upnpd" method="probed" conf="10"/></port>
+</ports>
+<times srtt="81646" rttvar="92084" to="449982"/>
+</host>
+<runstats><finished time="1747748631" timestr="Tue May 20 14:43:51 2025" summary="Nmap done at Tue May 20 14:43:51 2025; 1 IP address (1 host up) scanned in 5.41 seconds" elapsed="5.41" exit="success"/><hosts up="1" down="0" total="1"/>
+</runstats>
+</nmaprun>
