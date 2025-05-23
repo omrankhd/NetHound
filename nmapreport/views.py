@@ -1,10 +1,13 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponse
 import xmltodict, json, html, os, hashlib, re, urllib.parse, base64
 from collections import OrderedDict
 from nmapreport.functions import *
 from django.conf import settings
 from pathlib import Path
+
+
+
 
 def login(request):
 	r = {}
@@ -19,6 +22,8 @@ def login(request):
 	return render(request, 'nmapreport/nmap_auth.html', r)
 
 def setscanfile(request, scanfile):
+	print(scanfile)
+	print(request)
 	xmlfiles = os.listdir('/opt/xml')
 
 	for i in xmlfiles:
@@ -32,9 +37,246 @@ def setscanfile(request, scanfile):
 
 	return render(request, 'nmapreport/nmap_hostdetails.html', { 'js': '<script> location.href="/"; </script>' })
 
+def setscanfolder(request, foldername):
+    print("setscanfolder")
+    base_path = '/opt/xml'
+    folder_path = os.path.join(base_path, foldername)
+
+    if foldername == 'unset':
+        request.session.pop('scanfolder', None)
+    elif os.path.isdir(folder_path):
+        request.session['scanfolder'] = folder_path
+
+    return redirect('/')
 
 def port(request, port):
 	return render(request, 'nmapreport/index.html', { 'out': '', 'table': '', 'scaninfo': '', 'scandetails': '', 'trhost': '' })
+
+# def details(request, address):
+   
+
+#     r = {}
+#     if 'auth' not in request.session:
+#         return render(request, 'nmapreport/nmap_auth.html', r)
+#     else:
+#         r['auth'] = True
+
+#     if 'scanfolder' not in request.session:
+#         return redirect('/select-scanfolder/')
+
+#     folder_path = request.session['scanfolder']
+#     folder_name = os.path.basename(folder_path.rstrip('/'))
+#     scanmd5 = hashlib.md5(folder_name.encode('utf-8')).hexdigest()
+#     addressmd5 = hashlib.md5(address.encode('utf-8')).hexdigest()
+
+#     # Find the host matching the address
+#     target_host = None
+#     for fname in os.listdir(folder_path):
+#         if not fname.endswith('.xml'):
+#             continue
+#         try:
+#             with open(os.path.join(folder_path, fname), 'r') as f:
+#                 xml = xmltodict.parse(f.read())
+#             o = json.loads(json.dumps(xml['nmaprun'], indent=4))
+#             hosts = o.get('host', [])
+#             if not isinstance(hosts, list):
+#                 hosts = [hosts]
+#             for i in hosts:
+#                 addr_info = i.get('address')
+#                 if isinstance(addr_info, list):
+#                     for ai in addr_info:
+#                         if ai.get('@addrtype') == 'ipv4' and ai.get('@addr') == address:
+#                             target_host = i
+#                 elif isinstance(addr_info, dict) and addr_info.get('@addr') == address:
+#                     target_host = i
+#                 if target_host:
+#                     break
+#             if target_host:
+#                 break
+#         except Exception:
+#             continue
+
+#     if not target_host:
+#         r['js'] = '<script>alert("Host not found in any scan file.");</script>'
+#         return render(request, 'nmapreport/nmap_portdetails.html', r)
+
+#     # Load CVEs, labels, notes
+#     labelhost, noteshost, cvehost = {}, {}, get_cve(scanmd5)
+#     for f in os.listdir('/opt/notes'):
+#         if re.match(fr'^{scanmd5}_[a-z0-9]{{32}}\.(host\.label|notes)$', f):
+#             key = f.split('.')[0].split('_')[1]
+#             with open(os.path.join('/opt/notes', f), 'r') as fp:
+#                 content = fp.read()
+#             if f.endswith('.host.label'):
+#                 labelhost.setdefault(scanmd5, {})[key] = content
+#             elif f.endswith('.notes'):
+#                 noteshost.setdefault(scanmd5, {})[key] = content
+
+#     r['trhost'] = ''
+#     r['trhead'] = '<tr><th>Port</th><th style="width:300px;">Product / Version</th><th>Extra Info</th><th>&nbsp;</th></tr>'
+#     r['tr'] = {}
+
+#     hostname = ''
+#     hlist = target_host.get('hostnames', {}).get('hostname', [])
+#     if isinstance(hlist, dict):
+#         hlist = [hlist]
+#     for hi in hlist:
+#         hostname += f"<span class='small grey-text'><b>{hi['@type']}:</b> {hi['@name']}</span><br>"
+
+#     r['address'] = html.escape(address)
+#     r['hostname'] = hostname
+#     r['scanfile'] = folder_name
+
+#     # Label
+#     r['label'] = ''
+#     if scanmd5 in labelhost and addressmd5 in labelhost[scanmd5]:
+#         label = labelhost[scanmd5][addressmd5]
+#         r['label'] = html.escape(label)
+#         r['labelcolor'] = labelToColor(label)
+
+#     # Notes
+#     if scanmd5 in noteshost and addressmd5 in noteshost[scanmd5]:
+#         decoded = base64.b64decode(urllib.parse.unquote(noteshost[scanmd5][addressmd5])).decode('utf-8')
+#         r['notes'] = decoded
+#         r['table'] = f'''
+#             <div class="card" style="background-color:#3e3e3e;">
+#                 <div class="card-content"><h5>Notes</h5>{decoded}</div>
+#             </div>
+#         '''
+#     else:
+#         r['table'] = ''
+
+#     # Port Details
+#     ports = target_host.get('ports', {}).get('port', [])
+#     if isinstance(ports, dict):
+#         ports = [ports]
+
+#     po, pc, pf = 0, 0, 0
+#     rmdupl = {}
+#     pel = 0
+
+#     for p in ports:
+#         portid = p.get('@portid')
+#         if portid in rmdupl:
+#             continue
+#         rmdupl[portid] = True
+#         pel += 1
+
+#         state = p['state']['@state']
+#         reason = p['state'].get('@reason', '')
+#         protocol = p.get('@protocol', '')
+#         service = p.get('service', {})
+#         servicename = service.get('@name', '')
+#         version = service.get('@version', '<i class="grey-text">No Version</i>')
+#         product = service.get('@product', '<i class="grey-text">No Product</i>')
+#         extrainfo = service.get('@extrainfo', '<i class="grey-text">N/A</i>')
+
+#         # CPE
+#         cpe_html = ''
+#         cpes = service.get('cpe', [])
+#         if isinstance(cpes, str):
+#             cpes = [cpes]
+#         for cpei in cpes:
+#             cpe_html += f'<div class="grey-text" style="font-family:monospace;font-size:12px;">{html.escape(cpei)}</div>'
+
+#         # Scripts
+#         so = ''
+#         scripts = p.get('script', [])
+#         if isinstance(scripts, dict):
+#             scripts = [scripts]
+#         for sosc in scripts:
+#             sid = sosc.get('@id', '')
+#             if sid and sid != 'fingerprint-strings':
+#                 out = sosc.get('@output', '')
+#                 so += f'''
+#                     <div style="word-wrap: break-word; word-break: break-all; padding:6px; margin-left:6px; border-left:solid #666 1px; max-width:300px; font-size:12px; color:#ccc; font-family:monospace;">
+#                         <sup style="color:#999;border-bottom:solid #999 1px;">script output</sup><br><b>{html.escape(sid)}</b> {html.escape(out)}
+#                     </div>
+#                 '''
+
+#         # State counters
+#         if state == 'open':
+#             po += 1
+#         elif state == 'closed':
+#             pc += 1
+#         elif state == 'filtered':
+#             pf += 1
+
+#         # Table Row
+#         r['tr'][portid] = {
+#             'service': servicename,
+#             'protocol': protocol,
+#             'portid': portid,
+#             'product': product,
+#             'version': version,
+#             'cpe': cpe_html,
+#             'state': state,
+#             'reason': reason,
+#             'extrainfo': extrainfo,
+#             'pel': str(pel)
+#         }
+
+#         badge = f'<span class="new badge blue" data-badge-caption="">{protocol} / {portid}</span>'
+#         curl = f"curl -v -A 'Mozilla/5.0' -k 'http://{address}:{portid}'"
+#         telnet = f"telnet {address} {portid}"
+#         nikto = f"nikto -host 'http://{address}:{portid}'"
+
+#         r['trhost'] += f'''
+#         <tr>
+#             <td style="vertical-align:top;"><span style="color:#999;font-size:12px;">{servicename}</span><br>{badge}</td>
+#             <td>{product} / {version}<br><span style="font-size:12px;color:#999;">State: {state}<br>Reason: {reason}</span></td>
+#             <td style="vertical-align:top">{extrainfo}<br>{cpe_html}</td>
+#             <td>
+#                 <ul id="dropdown{pel}" class="dropdown-content" style="min-width:300px;">
+#                     <li><a href="#!" class="btncpy" data-clipboard-text="{curl}">Copy as curl</a></li>
+#                     <li><a href="#!" class="btncpy" data-clipboard-text="{nikto}">Copy as nikto</a></li>
+#                     <li><a href="#!" class="btncpy" data-clipboard-text="{telnet}">Copy as telnet</a></li>
+#                 </ul>
+#                 <a class="dropdown-trigger btn blue right" href="#!" data-target="dropdown{pel}"><i class="material-icons">arrow_drop_down</i></a>
+#                 <button onclick="apiPortDetails('{html.escape(address)}','{portid}');" class="btn blue right"><i class="material-icons">receipt</i></button>
+#             </td>
+#         </tr>
+#         '''
+
+#     # CVE
+#     cveout = ''
+#     if scanmd5 in cvehost and addressmd5 in cvehost[scanmd5]:
+#         cvejson = json.loads(cvehost[scanmd5][addressmd5])
+#         for entry in cvejson:
+#             listcve = entry if isinstance(entry, list) else [entry]
+#             for cveobj in listcve:
+#                 refs = ''.join([f'<a href="{ref}">{ref}</a><br>' for ref in cveobj.get('references', [])])
+#                 exdb = ''
+#                 if 'exploit-db' in cveobj:
+#                     exdb = '<br><b>Exploit DB:</b><br>' + ''.join(
+#                         [f'<a href="{e["source"]}">{html.escape(e["title"])}</a><br>' for e in cveobj['exploit-db'] if 'title' in e]
+#                     )
+#                 cveout += f'''
+#                     <div id="{html.escape(cveobj["id"])}" style="line-height:28px;padding:10px;border-bottom:solid #666 1px;margin-top:10px;">
+#                         <span class="label red">{html.escape(cveobj["id"])}</span> {html.escape(cveobj["summary"])}<br>
+#                         <div class="small" style="line-height:20px;"><b>References:</b><br>{refs}</div>
+#                         <div class="small">{exdb}</div>
+#                     </div>
+#                 '''
+#     r['cvelist'] = cveout
+
+#     # JS
+#     r['js'] = f'''
+#     <script>
+#     $(document).ready(function() {{
+#         var clipboard = new ClipboardJS(".btncpy");
+#         clipboard.on("success", function(e) {{
+#             M.toast({{html: "Copied to clipboard"}});
+#         }});
+#         $(".dropdown-trigger").dropdown();
+#         $("#detailspo").html('<center><h4><i class="fas fa-door-open green-text"></i> {po}</h4><span class="small grey-text">OPEN PORTS</span></center>');
+#         $("#detailspc").html('<center><h4><i class="fas fa-door-closed red-text"></i> {pc}</h4><span class="small grey-text">CLOSED PORTS</span></center>');
+#         $("#detailspf").html('<center><h4><i class="fas fa-filter grey-text"></i> {pf}</h4><span class="small grey-text">FILTERED PORTS</span></center>');
+#     }});
+#     </script>
+#     '''
+
+#     return render(request, 'nmapreport/nmap_portdetails.html', r)
 
 def details(request, address):
 	r = {}
@@ -326,6 +568,8 @@ def details(request, address):
 	'</script>'
 
 	return render(request, 'nmapreport/nmap_portdetails.html', r)
+
+
 
 def index(request, filterservice="", filterportid=""):
 	r = {}
@@ -830,20 +1074,32 @@ def about(request):
 		r['auth'] = True
 
 	return render(request, 'nmapreport/nmap_about.html', r)
-def select_scanfolder(request):
-    r = {}
 
-    if 'auth' not in request.session:
-        return render(request, 'nmapreport/nmap_auth.html', r)
+def select_scanfolder(request):
+    print("In select_scanfolder, method:", request.method)
 
     base_dir = '/opt/xml'
     folders = [f for f in os.listdir(base_dir) if os.path.isdir(os.path.join(base_dir, f))]
+    print("Folders available:", folders)
 
     if request.method == "POST":
         selected = request.POST.get("folder")
-        if selected and selected in folders:
-            request.session['scanfolder'] = os.path.join(base_dir, selected)
-            return render(request, 'nmapreport/nmap_hostdetails.html', {'js': '<script>location.href="/";</script>'})
+        print("POST received, selected folder:", selected)
 
-    r['folders'] = folders
-    return render(request, 'nmapreport/select_scanfolder.html', r)
+        if selected and selected in folders:
+            folder_path = os.path.join(base_dir, selected)
+            request.session['scanfolder'] = folder_path
+            request.session.modified = True
+            print("Session set:", request.session['scanfolder'])
+            return redirect('home')
+
+        print("Invalid folder selected")
+        return render(request, 'nmapreport/select_scanfolder.html', {
+            'folders': folders,
+            'error': 'Invalid folder selected'
+        })
+
+    return render(request, 'nmapreport/select_scanfolder.html', {
+        'folders': folders
+    })
+		

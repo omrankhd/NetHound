@@ -4,6 +4,7 @@ from . import views, api, pdf, network, functions_nmap, ndiff
 urlpatterns = [
 	path('', views.index, name='index'),
 	path('setscanfile/<scanfile>', views.setscanfile, name='setscanfile'),
+    path('setscanfolder/<str:foldername>/', views.setscanfolder, name='setscanfolder'),
 	path('<address>/', views.details, name='details'),
 	path('port/<port>/', views.port, name='port'),
 	path('service/<filterservice>/', views.index, name='service'),

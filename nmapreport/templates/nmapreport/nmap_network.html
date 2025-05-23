@@ -119,21 +119,21 @@
 	}
 
 
-	$(document).ready(function() {
-		draw();
-		$('#toggle-physics').click(function () {
-			physicsEnabled = !physicsEnabled;
-			network.setOptions({
-				physics: {
-					enabled: physicsEnabled
-				}
+		$(document).ready(function() {
+			draw();
+			$('#toggle-physics').click(function () {
+				physicsEnabled = !physicsEnabled;
+				network.setOptions({
+					physics: {
+						enabled: physicsEnabled
+					}
+				});
+				$(this).toggleClass("green").toggleClass("blue");
+				$(this).text(physicsEnabled ? "Disable Physics" : "Enable Physics");
 			});
-			$(this).toggleClass("green").toggleClass("blue");
-			$(this).text(physicsEnabled ? "Disable Physics" : "Enable Physics");
 		});
-	});
-</script>
+	</script>
 
-	{{ js|safe }}
+		{{ js|safe }}
 
-{% endblock %}
+	{% endblock %}

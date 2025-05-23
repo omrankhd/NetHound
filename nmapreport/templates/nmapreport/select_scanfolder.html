@@ -1,11 +1,23 @@
-<h5>Select a scan folder</h5>
+{% extends 'nmapreport/base.html' %}
+{% block content %}
+
+<h4>Select a Scan Folder</h4>
+
+{% if error %}
+  <div class="card-panel red white-text">{{ error }}</div>
+{% endif %}
+
 <form method="post">
   {% csrf_token %}
-  <select name="folder" required>
-    {% for folder in folders %}
-      <option value="{{ folder }}">{{ folder }}</option>
-    {% endfor %}
-  </select>
-  <br><br>
-  <button class="btn blue" type="submit">Select Folder</button>
+  <div class="input-field">
+    <select name="folder" class="browser-default" required>
+        <option value="" disabled>Choose a folder</option>
+      {% for folder in folders %}
+        <option value="{{ folder }}">{{ folder }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="btn blue">Select Folder</button>
 </form>
+
+{% endblock %}
