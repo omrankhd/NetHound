@@ -24,20 +24,22 @@ def login(request):
 
 def setscanpath(request, scanname):
     print("Scan name:", scanname)
-    base_path = '/opt/xml'
-
+    base_path =  request.session['path']#'/opt/xml'
+    print("base_path:", base_path)
+    print("isittrue:",scanname in os.listdir('/opt/xml'))
     if scanname == 'unset':
         request.session.pop('scanfile', None)
         request.session.pop('scanfolder', None)
     else:
-        full_path = os.path.join(base_path, scanname)
-
+        full_path = os.path.join('/opt/xml', scanname)
+        print ("full_path",full_path)
         if os.path.isdir(full_path):
             request.session['scanfolder'] = full_path
             request.session.pop('scanfile', None)  # Ensure only one is set
             print(f"Set folder session to {full_path}")
+            
 
-        elif scanname in os.listdir(base_path):  # Check only filename match
+        elif full_path.startswith(base_path):  # Check only filename match
             request.session['scanfile'] = scanname
             request.session.pop('scanfolder', None)  # Ensure only one is set
             print(f"Set file session to {scanname}")
@@ -594,48 +596,179 @@ def port(request, port):
 
 # 	return render(request, 'nmapreport/nmap_portdetails.html', r)
 
+
 def main_index(request, subpath=""):
-	r = {}
+    r = {}
+	
+    if 'auth' not in request.session:
+        return render(request, 'nmapreport/nmap_auth.html', r)
+    else:
+        r['auth'] = True
+	
+    print("Selected scanfile:", request.session.get("scanfile"))
+    print("Selected scanfolder:", request.session.get("scanfolder"))
 
-	if 'auth' not in request.session:
-		return render(request, 'nmapreport/nmap_auth.html', r)
-	else:
-		r['auth'] = True
+    xml_base = '/opt/xml'
+
+    rpath = os.path.join(xml_base, subpath)
+    request.session['path']= rpath
+    r['path']=rpath
+    selected_file = request.session.get('scanfile')
+    selected_folder = request.session.get('scanfolder')
+
+    r['tr'] = {}
+    r['stats'] = {'po': 0, 'pc': 0, 'pf': 0}
+    xmlfilescount = 0
+
+    # CASE 1: A specific file is selected
+    if selected_file:
+        try:
+            print("seletedfile")
+            xml_path = os.path.join(xml_base, selected_file)
+            print(xml_path)
+            with open(xml_path, 'r') as f:
+                oo = xmltodict.parse(f.read())
+            r['out2'] = json.dumps(oo['nmaprun'], indent=4)
+            return render(request, 'nmapreport/nmap_hostdetails.html', {
+        'js': '<script> location.href="/index"; </script>'
+    })
+        except Exception as e:
+            r['out2'] = f"Failed to parse selected file: {html.escape(str(e))}"
+            return render(request, 'nmapreport/browser.html', r)
+
+    # CASE 2: A folder is selected
+    elif selected_folder and os.path.isdir(selected_folder):
+        
+        for fname in os.listdir(selected_folder):
+            if not fname.endswith('.xml'):
+                continue
+            
+            xmlfilescount += 1
+            xml_path = os.path.join(selected_folder, fname)
+           
+            try:
+               
+               
+                oo = xmltodict.parse(open(xml_path, 'r').read())
+              		
+            except:
+                r['tr'][fname] = {'filename':html.escape(fname), 'start': 0, 'startstr': 'Incomplete / Invalid', 'hostnum':0, 'href':'#!', 'portstats':{'po':0,'pc':0,'pf':0}}
+               
+                continue
+
+            r['out2'] = json.dumps(oo['nmaprun'], indent=4)
+            o = json.loads(r['out2'])
+
+            if 'host' in o:
+                if type(o['host']) is not dict:
+                    hostnum = str(len(o['host']))
+                else:
+                    hostnum = '1'
+            else:
+                hostnum = '0'
+
+            if hostnum != '0':
+                viewhref = '/setscanpath/'+html.escape(fname)
+            else:
+                viewhref = '#!'
+
+            filename = fname
+
+            portstats = ports_stats(xml_path)
+            
+
+            r['stats']['po'] = (r['stats']['po'] + portstats['po'])
+            r['stats']['pc'] = (r['stats']['pc'] + portstats['pc'])
+            r['stats']['pf'] = (r['stats']['pf'] + portstats['pf'])
+            
+
+            r['tr'][o['@start']] = {
+                'filename':filename,
+                'start': o['@start'],
+                'startstr': html.escape(o['@startstr']),
+                'hostnum':hostnum,
+                'href':viewhref,
+                'portstats':portstats
+            }
+
+        r['tr'] = OrderedDict(sorted(r['tr'].items()))
+        r['stats']['xmlcount'] = xmlfilescount
+
+        return render(request, 'nmapreport/nmap_xmlfiles.html', r)
 
 
-	root_path = "/opt/xml"
-	abs_path = os.path.join(root_path, subpath)
 
-    # Normalize and prevent path traversal
-	abs_path = os.path.normpath(abs_path)
-	if not abs_path.startswith(root_path):
-		raise Http404("Access denied")
+    # CASE 3: No selection, fallback to listing all in /opt/xml
+    else:
+        
+        print("nothing selected")
+        for fname in os.listdir(rpath): 
+            if not fname.endswith('.xml'):
+                continue
 
-	if not os.path.exists(abs_path):
-		raise Http404("Path not found")
+            xmlfilescount += 1
+            xml_path = os.path.join(rpath, fname)
+            fullname = os.path.join(subpath, fname)
+            # print("xml_path:",xml_path)
+            # print("fullname:",fullname)
+            try:
+                with open(xml_path, 'r') as f:
+                    oo = xmltodict.parse(f.read())
+            except Exception:
+                r['tr'][fname] = {
+                    'filename': html.escape(fullname),
+                    'start': 0,
+                    'startstr': 'Incomplete / Invalid',
+                    'hostnum': 0,
+                    'href': '#!',
+                    'portstats': {'po': 0, 'pc': 0, 'pf': 0}
+                }
+                continue
 
-	items = []
-	for entry in sorted(os.listdir(abs_path)):
-		full_path = os.path.join(abs_path, entry)
-		is_dir = os.path.isdir(full_path)
-		rel_path = os.path.join(subpath, entry).replace("\\", "/")  # Cross-platform
+            r['out2'] = json.dumps(oo['nmaprun'], indent=4)
+            o = json.loads(r['out2'])
 
-		items.append({
-			'name': entry,
-			'is_dir': is_dir,
-			'href': f"/browse/{rel_path}" if is_dir else f"/setscanfile/{rel_path}",
-		})
+            if 'host' in o:
+                hostnum = str(len(o['host'])) if isinstance(o['host'], list) else '1'
+            else:
+                hostnum = '0'
 
-	context = {
-		'current_path': subpath,
-		'items': items,
-		'parent_path': os.path.dirname(subpath).replace("\\", "/") if subpath else None,
-	}
-	return render(request, 'nmapreport/browser.html', context)
+            viewhref = f'/setscanpath/{html.escape(fullname)}' if hostnum != '0' else '#!'
+            portstats = ports_stats(xml_path)
+
+ 
+            r['stats']['po'] += portstats['po']
+            r['stats']['pc'] += portstats['pc']
+            r['stats']['pf'] += portstats['pf']
+
+            for entry in os.listdir(rpath):
+                full_entry_path = os.path.join(rpath, entry)
+                if os.path.isdir(full_entry_path):
+                    r['tr'][entry + "/"] = {
+                    'filename': os.path.join(subpath, entry),
+                    'is_folder': True,
+                    'start': 0,
+                    'startstr': '',
+                    'hostnum': '',
+                    'href': f'/setscanpath/{os.path.join(subpath, entry)}',
+                    'portstats': {'po': 0, 'pc': 0, 'pf': 0}
+            	}
+            r['tr'][fname] = {
+                'filename': html.escape(fullname),
+                'start': int(o.get('start', 0)),
+                'startstr': o.get('startstr', 'Unknown'),
+                'hostnum': hostnum,
+                'href': viewhref,
+                'portstats': {'po': 0, 'pc': 0, 'pf': 0}
+            }
+
+    return render(request, 'nmapreport/browser.html', r)
+
 
 def index(request, filterservice="", filterportid=""):
 	r = {}
-
+	
+	
 	if 'auth' not in request.session:
 		return render(request, 'nmapreport/nmap_auth.html', r)
 	else:
@@ -683,7 +816,6 @@ def index(request, filterservice="", filterportid=""):
 				viewhref = '#!'
 
 			filename = i
-################
 
 			portstats = nmap_ports_stats(i)
 
@@ -1160,3 +1292,31 @@ def select_scanfolder(request):
         'folders': folders
     })
 		
+def select_scanproject(request,sub_path=""):
+    
+
+    base_dir = '/opt/xml'
+    folders = [f for f in os.listdir(base_dir) if os.path.isdir(os.path.join(base_dir, f))]
+    print("Folders available:", folders)
+
+    if request.method == "POST":
+        clicked = request.POST.get("folder")
+        selected = request.POST.get("folder")
+        print("POST received, selected folder:", selected)
+
+        if selected and selected in folders:
+            folder_path = os.path.join(base_dir, selected)
+            request.session['scanfolder'] = folder_path
+            request.session.modified = True
+            print("Session set:", request.session['scanfolder'])
+            return render(request, 'nmapreport/nmap_xmlfiles.html', {'folder_path': folder_path})
+
+        print("Invalid folder selected")
+        return render(request, 'nmapreport/select_scanproject.html', {
+            'folders': folders,
+            'error': 'Invalid folder selected'
+        })
+
+    return render(request, 'nmapreport/select_project.html', {
+        'folders': folders
+    })

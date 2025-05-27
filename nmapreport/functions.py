@@ -108,7 +108,73 @@ def nmap_ports_stats(scanfile):
 				iii = (iii + 1)
 
 	return {'po':po,'pc':pc,'pf':pf, 'debug':json.dumps(debug)}
+def ports_stats(scanfile):
+	try:
+		oo = xmltodict.parse(open(scanfile, 'r').read())
+	except:
+		return {'po':0,'pc':0,'pf':0}
 
+	r = json.dumps(oo['nmaprun'], indent=4)
+	o = json.loads(r)
+	debug = {}
+
+	po,pc,pf = 0,0,0
+
+	if 'host' not in o:
+		return {'po':0,'pc':0,'pf':0}
+
+	iii=0
+	lastaddress = ''
+	for ik in o['host']:
+		if type(ik) is dict:
+			i = ik
+		else:
+			i = o['host']
+
+		lastportid = 0
+
+		if '@addr' in i['address']:
+			address = i['address']['@addr']
+		elif type(i['address']) is list:
+			for ai in i['address']:
+				if ai['@addrtype'] == 'ipv4':
+					address = ai['@addr'] 
+
+		addressmd5 = hashlib.md5(str(address).encode('utf-8')).hexdigest()
+
+		if lastaddress == address:
+			continue
+		lastaddress = address
+
+		striggered = False
+		if 'ports' in i and 'port' in i['ports']:
+			for pobj in i['ports']['port']:
+				if type(pobj) is dict:
+					p = pobj
+				else:
+					p = i['ports']['port']
+
+				if lastportid == p['@portid']:
+					continue
+				else:
+					lastportid = p['@portid']
+
+				if address not in debug:
+					debug[address] = {'portcount':{'pc':{},'po':{},'pf':{}}}
+				debug[address][p['@portid']] = p['state']
+
+				if p['state']['@state'] == 'closed':
+					pc = (pc + 1)
+					debug[address]['portcount']['pc'][iii] = pc
+				elif p['state']['@state'] == 'open':
+					po = (po + 1)
+					debug[address]['portcount']['po'][iii] = po
+				elif p['state']['@state'] == 'filtered':
+					pf = (pf + 1)
+					debug[address]['portcount']['pf'][iii] = pf
+				iii = (iii + 1)
+
+	return {'po':po,'pc':pc,'pf':pf, 'debug':json.dumps(debug)}
 def get_cve(scanmd5):
 	cvehost = {}
 	cvefiles = os.listdir('/opt/notes')

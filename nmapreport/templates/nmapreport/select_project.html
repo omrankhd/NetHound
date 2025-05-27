@@ -6,6 +6,35 @@
 {% if error %}
   <div class="card-panel red white-text">{{ error }}</div>
 {% endif %}
+{% if folders %}
+<div class="card wmcard">
+	<div class="card-content">
+    <table>
+      <thead>
+        <tr>
+          <th>folder name</th>
+        </tr>
+      </thead>
+      <tbody>
+		{% for folder in folders %}
+          <tr>
+            <td><a href="{{ folder.href }}">{{folder}}</a></td>
+           
+            
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="card-panel red lighten-4">
+      <span>No folder found in the selected folder.</span>
+    </div>
+  {% endif %}
+
+</div>
+</div>
+
+
 
 <form method="post">
   {% csrf_token %}
