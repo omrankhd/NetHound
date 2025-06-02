@@ -737,9 +737,9 @@ def main_index(request, subpath=""):
             portstats = ports_stats(xml_path)
 
  
-            r['stats']['po'] += portstats['po']
-            r['stats']['pc'] += portstats['pc']
-            r['stats']['pf'] += portstats['pf']
+            r['stats']['po'] = (r['stats']['po'] + portstats['po'])
+            r['stats']['pc'] = (r['stats']['pc'] + portstats['pc'])
+            r['stats']['pf'] = (r['stats']['pf'] + portstats['pf'])
 
             for entry in os.listdir(rpath):
                 full_entry_path = os.path.join(rpath, entry)
@@ -751,7 +751,7 @@ def main_index(request, subpath=""):
                     'startstr': '',
                     'hostnum': '',
                     'href': f'/setscanpath/{os.path.join(subpath, entry)}',
-                    'portstats': {'po': 0, 'pc': 0, 'pf': 0}
+                    'portstats': portstats
             	}
             r['tr'][fname] = {
                 'filename': html.escape(fullname),
@@ -759,8 +759,10 @@ def main_index(request, subpath=""):
                 'startstr': o.get('startstr', 'Unknown'),
                 'hostnum': hostnum,
                 'href': viewhref,
-                'portstats': {'po': 0, 'pc': 0, 'pf': 0}
+                'portstats': portstats
             }
+            r['tr'] = OrderedDict(sorted(r['tr'].items()))
+        r['stats']['xmlcount'] = xmlfilescount
 
     return render(request, 'nmapreport/browser.html', r)
 
