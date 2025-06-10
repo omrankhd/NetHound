@@ -611,8 +611,23 @@ def main_index(request, subpath=""):
 	xml_base = '/opt/xml'
 
 	rpath = os.path.join(xml_base, subpath)
+	if  not rpath.startswith("xml_base"):
+			rpath = xml_base
+
 	request.session['path']= rpath
 	r['path']=rpath
+	if subpath:
+		parent_path = os.path.normpath(os.path.join(subpath, ".."))
+		print("parent_path:",parent_path)
+		if  not parent_path.startswith("xml_base"):
+			parent_path = xml_base
+
+		if parent_path == ".":
+			parent_path = xml_base
+		r['parent_path'] = parent_path
+	else:
+		r['parent_path'] = None  # At root
+
 	selected_file = request.session.get('scanfile')
 	selected_folder = request.session.get('scanfolder')
 
