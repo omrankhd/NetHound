@@ -611,7 +611,7 @@ def main_index(request, subpath=""):
 	xml_base = '/opt/xml'
 
 	rpath = os.path.join(xml_base, subpath)
-	if  not rpath.startswith("xml_base"):
+	if  not rpath.startswith(xml_base):
 			rpath = xml_base
 
 	request.session['path']= rpath
@@ -643,9 +643,10 @@ def main_index(request, subpath=""):
 					print("seletedfile")
 					xml_path = os.path.join(xml_base, selected_file)
 					print(xml_path)
-					with open(xml_path, 'r') as f:
-						oo = xmltodict.parse(f.read())
-					r['out2'] = json.dumps(oo['nmaprun'], indent=4)
+					# with open(xml_path, 'r') as f:
+					# 	oo = xmltodict.parse(f.read())
+					# r['out2'] = json.dumps(oo['nmaprun'], indent=4)
+					# print("if",r['out2'])
 					return render(request, 'nmapreport/nmap_hostdetails.html', {
 								'js': '<script> location.href="/index"; </script>'
 					})
@@ -654,9 +655,17 @@ def main_index(request, subpath=""):
 				jsonpath = os.path.join(xml_base, selected_file)
 				print(jsonpath)
 				with open(jsonpath, 'r') as f:
-					parsed = json.load(f)
-					data.append(parsed)
-					r['out2'] = json.dumps(data['nmaprun'], indent=4)
+					try:
+						jdata = json.load(f)
+						# If structure is same as XML-converted, access 'nmaprun'
+						if 'open_ports' in jdata:
+							r['out2'] = json.dumps(jdata['open_ports'], indent=4)
+							print("if",r['out2'])
+						else:
+							r['out2'] = json.dumps(jdata, indent=4)
+							print("else:",r['out2'])
+					except Exception as e:
+						r['out2'] = f"Failed to parse JSON: {html.escape(str(e))}"
 					return render(request, 'nmapreport/nmap_hostdetails.html', {
 								'js': '<script> location.href="/index"; </script>'
 					})

@@ -135,9 +135,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     all_hosts = load_all_xml_files(args.input_folder)
-    findings = asyncio.run(check_services(all_hosts))
+    print(all_hosts)
+    # findings = asyncio.run(check_services(all_hosts))
 
-    with open(args.output, "w") as f:
-        json.dump(findings, f, indent=4)
+    # with open(args.output, "w") as f:
+    #     json.dump(findings, f, indent=4)
 
     print(f"\n[✓] Scan complete. Combined results saved to: {args.output}")
