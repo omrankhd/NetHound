@@ -4,10 +4,8 @@ from . import views, api, pdf, network, functions_nmap, ndiff
 urlpatterns = [
 	path('', views.main_index, name='main_index'),
     path('index', views.index, name='index'),
-	path('setscanfile/<scanfile>', views.setscanfile, name='setscanfile'),
     path('setscanpath/<path:scanname>', views.setscanpath, name='setscanpath'),
-    path('setscanfolder/<str:foldername>/', views.setscanfolder, name='setscanfolder'),
-	#path('<address>/', views.details, name='details'),
+	path('<address>/', views.details, name='details'),
 	path('port/<port>/', views.port, name='port'),
 	path('service/<filterservice>/', views.index, name='service'),
 	path('portid/<filterportid>/', views.index, name='portid'),
@@ -28,7 +26,6 @@ urlpatterns = [
 	path('view/pdf/', pdf.reportPDFView, name='reportPDFView'),
 	path('view/network/', network.visjs, name='network_view'),
 	path('view/ndiff/<f1>/<f2>', views.scan_diff, name='ndiffview'),
-    path('select-scanfolder/', views.select_scanproject, name='select_scanfolder'),
 	path('browse/<path:subpath>', views.main_index, name='browse'),
     path('browse/', views.main_index, name='browse_root'),
 ]

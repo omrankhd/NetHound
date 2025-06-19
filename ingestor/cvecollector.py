@@ -105,8 +105,7 @@ async def check_services(hosts):
 
             # Query Vulners
             cves = query_vulners(product, version)
-            sleep(1)  # Be nice to the API
-
+            sleep(1) 
             svc.update({"cves": cves})
             enriched_services.append(svc)
 
@@ -117,16 +116,33 @@ async def check_services(hosts):
             "services": enriched_services
         })
 
-    return results
+    return {
+        "cvecollector": results
+    }
+
+from pathlib import Path
 
 def load_all_xml_files(folder_path):
-    xml_files = list(Path(folder_path).glob("*.xml"))
+    xml_files = list(Path(folder_path).rglob("*.xml"))  # recursively get .xml files
     all_hosts = []
     for xml_file in xml_files:
         print(f"[+] Parsing: {xml_file}")
         hosts = parse_nmap_xml(xml_file)
         all_hosts.extend(hosts)
     return all_hosts
+
+def runcvecollector(folder_project,outputfilename):
+    output = outputfilename
+
+    all_hosts = load_all_xml_files(folder_project)
+    print(all_hosts)
+    findings = asyncio.run(check_services(all_hosts))
+
+    with open(output, "w") as f:
+        json.dump(findings, f, indent=4)
+
+    print(f"\n[✓] Scan complete. Combined results saved to: {output}")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Bulk Nmap XML Analyzer: FTP/Telnet Check & CVE Lookup")
@@ -136,9 +152,9 @@ if __name__ == "__main__":
 
     all_hosts = load_all_xml_files(args.input_folder)
     print(all_hosts)
-    # findings = asyncio.run(check_services(all_hosts))
+    findings = asyncio.run(check_services(all_hosts))
 
-    # with open(args.output, "w") as f:
-    #     json.dump(findings, f, indent=4)
+    with open(args.output, "w") as f:
+        json.dump(findings, f, indent=4)
 
     print(f"\n[✓] Scan complete. Combined results saved to: {args.output}")

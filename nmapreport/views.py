@@ -48,553 +48,528 @@ def setscanpath(request, scanname):
         'js': '<script> location.href="/"; </script>'
     })
 
-def setscanfile(request, scanfile):
-	print(scanfile)
-	print(request)
-	xmlfiles = os.listdir('/opt/xml')
 
-	for i in xmlfiles:
-		if i == scanfile:
-			request.session['scanfile'] = i
-			break
 
-	if scanfile == 'unset':
-		if 'scanfile' in request.session:
-			del(request.session['scanfile'])
-
-	return render(request, 'nmapreport/nmap_hostdetails.html', { 'js': '<script> location.href="/"; </script>' })
-
-def setscanfolder(request, foldername):
-    print("setscanfolder")
-    base_path = '/opt/xml'
-    folder_path = os.path.join(base_path, foldername)
-
-    if foldername == 'unset':
-        request.session.pop('scanfolder', None)
-    elif os.path.isdir(folder_path):
-        request.session['scanfolder'] = folder_path
-
-    return redirect('/')
 
 def port(request, port):
 	return render(request, 'nmapreport/index.html', { 'out': '', 'table': '', 'scaninfo': '', 'scandetails': '', 'trhost': '' })
 
-# def details(request, address):
+def details(request, address):
    
 
-#     r = {}
-#     if 'auth' not in request.session:
-#         return render(request, 'nmapreport/nmap_auth.html', r)
-#     else:
-#         r['auth'] = True
+    r = {}
+    if 'auth' not in request.session:
+        return render(request, 'nmapreport/nmap_auth.html', r)
+    else:
+        r['auth'] = True
 
-#     if 'scanfolder' not in request.session:
-#         return redirect('/select-scanfolder/')
+    if 'scanfolder' not in request.session:
+        return redirect('/select-scanfolder/')
 
-#     folder_path = request.session['scanfolder']
-#     folder_name = os.path.basename(folder_path.rstrip('/'))
-#     scanmd5 = hashlib.md5(folder_name.encode('utf-8')).hexdigest()
-#     addressmd5 = hashlib.md5(address.encode('utf-8')).hexdigest()
+    folder_path = request.session['scanfolder']
+    folder_name = os.path.basename(folder_path.rstrip('/'))
+    scanmd5 = hashlib.md5(folder_name.encode('utf-8')).hexdigest()
+    addressmd5 = hashlib.md5(address.encode('utf-8')).hexdigest()
 
-#     # Find the host matching the address
-#     target_host = None
-#     for fname in os.listdir(folder_path):
-#         if not fname.endswith('.xml'):
-#             continue
-#         try:
-#             with open(os.path.join(folder_path, fname), 'r') as f:
-#                 xml = xmltodict.parse(f.read())
-#             o = json.loads(json.dumps(xml['nmaprun'], indent=4))
-#             hosts = o.get('host', [])
-#             if not isinstance(hosts, list):
-#                 hosts = [hosts]
-#             for i in hosts:
-#                 addr_info = i.get('address')
-#                 if isinstance(addr_info, list):
-#                     for ai in addr_info:
-#                         if ai.get('@addrtype') == 'ipv4' and ai.get('@addr') == address:
-#                             target_host = i
-#                 elif isinstance(addr_info, dict) and addr_info.get('@addr') == address:
-#                     target_host = i
-#                 if target_host:
-#                     break
-#             if target_host:
-#                 break
-#         except Exception:
-#             continue
+    # Find the host matching the address
+    target_host = None
+    for fname in os.listdir(folder_path):
+        if not fname.endswith('.xml'):
+            continue
+        try:
+            with open(os.path.join(folder_path, fname), 'r') as f:
+                xml = xmltodict.parse(f.read())
+            o = json.loads(json.dumps(xml['nmaprun'], indent=4))
+            hosts = o.get('host', [])
+            if not isinstance(hosts, list):
+                hosts = [hosts]
+            for i in hosts:
+                addr_info = i.get('address')
+                if isinstance(addr_info, list):
+                    for ai in addr_info:
+                        if ai.get('@addrtype') == 'ipv4' and ai.get('@addr') == address:
+                            target_host = i
+                elif isinstance(addr_info, dict) and addr_info.get('@addr') == address:
+                    target_host = i
+                if target_host:
+                    break
+            if target_host:
+                break
+        except Exception:
+            continue
 
-#     if not target_host:
-#         r['js'] = '<script>alert("Host not found in any scan file.");</script>'
-#         return render(request, 'nmapreport/nmap_portdetails.html', r)
+    if not target_host:
+        r['js'] = '<script>alert("Host not found in any scan file.");</script>'
+        return render(request, 'nmapreport/nmap_portdetails.html', r)
 
-#     # Load CVEs, labels, notes
-#     labelhost, noteshost, cvehost = {}, {}, get_cve(scanmd5)
-#     for f in os.listdir('/opt/notes'):
-#         if re.match(fr'^{scanmd5}_[a-z0-9]{{32}}\.(host\.label|notes)$', f):
-#             key = f.split('.')[0].split('_')[1]
-#             with open(os.path.join('/opt/notes', f), 'r') as fp:
-#                 content = fp.read()
-#             if f.endswith('.host.label'):
-#                 labelhost.setdefault(scanmd5, {})[key] = content
-#             elif f.endswith('.notes'):
-#                 noteshost.setdefault(scanmd5, {})[key] = content
+    # Load CVEs, labels, notes
+    labelhost, noteshost, cvehost = {}, {}, get_cve(scanmd5)
+    for f in os.listdir('/opt/notes'):
+        if re.match(fr'^{scanmd5}_[a-z0-9]{{32}}\.(host\.label|notes)$', f):
+            key = f.split('.')[0].split('_')[1]
+            with open(os.path.join('/opt/notes', f), 'r') as fp:
+                content = fp.read()
+            if f.endswith('.host.label'):
+                labelhost.setdefault(scanmd5, {})[key] = content
+            elif f.endswith('.notes'):
+                noteshost.setdefault(scanmd5, {})[key] = content
 
-#     r['trhost'] = ''
-#     r['trhead'] = '<tr><th>Port</th><th style="width:300px;">Product / Version</th><th>Extra Info</th><th>&nbsp;</th></tr>'
-#     r['tr'] = {}
+    r['trhost'] = ''
+    r['trhead'] = '<tr><th>Port</th><th style="width:300px;">Product / Version</th><th>Extra Info</th><th>&nbsp;</th></tr>'
+    r['tr'] = {}
 
-#     hostname = ''
-#     hlist = target_host.get('hostnames', {}).get('hostname', [])
-#     if isinstance(hlist, dict):
-#         hlist = [hlist]
-#     for hi in hlist:
-#         hostname += f"<span class='small grey-text'><b>{hi['@type']}:</b> {hi['@name']}</span><br>"
+    hostname = ''
+    hlist = target_host.get('hostnames', {}).get('hostname', [])
+    if isinstance(hlist, dict):
+        hlist = [hlist]
+    for hi in hlist:
+        hostname += f"<span class='small grey-text'><b>{hi['@type']}:</b> {hi['@name']}</span><br>"
 
-#     r['address'] = html.escape(address)
-#     r['hostname'] = hostname
-#     r['scanfile'] = folder_name
+    r['address'] = html.escape(address)
+    r['hostname'] = hostname
+    r['scanfile'] = folder_name
 
-#     # Label
-#     r['label'] = ''
-#     if scanmd5 in labelhost and addressmd5 in labelhost[scanmd5]:
-#         label = labelhost[scanmd5][addressmd5]
-#         r['label'] = html.escape(label)
-#         r['labelcolor'] = labelToColor(label)
+    # Label
+    r['label'] = ''
+    if scanmd5 in labelhost and addressmd5 in labelhost[scanmd5]:
+        label = labelhost[scanmd5][addressmd5]
+        r['label'] = html.escape(label)
+        r['labelcolor'] = labelToColor(label)
 
-#     # Notes
-#     if scanmd5 in noteshost and addressmd5 in noteshost[scanmd5]:
-#         decoded = base64.b64decode(urllib.parse.unquote(noteshost[scanmd5][addressmd5])).decode('utf-8')
-#         r['notes'] = decoded
-#         r['table'] = f'''
-#             <div class="card" style="background-color:#3e3e3e;">
-#                 <div class="card-content"><h5>Notes</h5>{decoded}</div>
-#             </div>
-#         '''
-#     else:
-#         r['table'] = ''
+    # Notes
+    if scanmd5 in noteshost and addressmd5 in noteshost[scanmd5]:
+        decoded = base64.b64decode(urllib.parse.unquote(noteshost[scanmd5][addressmd5])).decode('utf-8')
+        r['notes'] = decoded
+        r['table'] = f'''
+            <div class="card" style="background-color:#3e3e3e;">
+                <div class="card-content"><h5>Notes</h5>{decoded}</div>
+            </div>
+        '''
+    else:
+        r['table'] = ''
 
-#     # Port Details
-#     ports = target_host.get('ports', {}).get('port', [])
-#     if isinstance(ports, dict):
-#         ports = [ports]
+    # Port Details
+    ports = target_host.get('ports', {}).get('port', [])
+    if isinstance(ports, dict):
+        ports = [ports]
 
-#     po, pc, pf = 0, 0, 0
-#     rmdupl = {}
-#     pel = 0
+    po, pc, pf = 0, 0, 0
+    rmdupl = {}
+    pel = 0
 
-#     for p in ports:
-#         portid = p.get('@portid')
-#         if portid in rmdupl:
-#             continue
-#         rmdupl[portid] = True
-#         pel += 1
+    for p in ports:
+        portid = p.get('@portid')
+        if portid in rmdupl:
+            continue
+        rmdupl[portid] = True
+        pel += 1
 
-#         state = p['state']['@state']
-#         reason = p['state'].get('@reason', '')
-#         protocol = p.get('@protocol', '')
-#         service = p.get('service', {})
-#         servicename = service.get('@name', '')
-#         version = service.get('@version', '<i class="grey-text">No Version</i>')
-#         product = service.get('@product', '<i class="grey-text">No Product</i>')
-#         extrainfo = service.get('@extrainfo', '<i class="grey-text">N/A</i>')
+        state = p['state']['@state']
+        reason = p['state'].get('@reason', '')
+        protocol = p.get('@protocol', '')
+        service = p.get('service', {})
+        servicename = service.get('@name', '')
+        version = service.get('@version', '<i class="grey-text">No Version</i>')
+        product = service.get('@product', '<i class="grey-text">No Product</i>')
+        extrainfo = service.get('@extrainfo', '<i class="grey-text">N/A</i>')
 
-#         # CPE
-#         cpe_html = ''
-#         cpes = service.get('cpe', [])
-#         if isinstance(cpes, str):
-#             cpes = [cpes]
-#         for cpei in cpes:
-#             cpe_html += f'<div class="grey-text" style="font-family:monospace;font-size:12px;">{html.escape(cpei)}</div>'
+        # CPE
+        cpe_html = ''
+        cpes = service.get('cpe', [])
+        if isinstance(cpes, str):
+            cpes = [cpes]
+        for cpei in cpes:
+            cpe_html += f'<div class="grey-text" style="font-family:monospace;font-size:12px;">{html.escape(cpei)}</div>'
 
-#         # Scripts
-#         so = ''
-#         scripts = p.get('script', [])
-#         if isinstance(scripts, dict):
-#             scripts = [scripts]
-#         for sosc in scripts:
-#             sid = sosc.get('@id', '')
-#             if sid and sid != 'fingerprint-strings':
-#                 out = sosc.get('@output', '')
-#                 so += f'''
-#                     <div style="word-wrap: break-word; word-break: break-all; padding:6px; margin-left:6px; border-left:solid #666 1px; max-width:300px; font-size:12px; color:#ccc; font-family:monospace;">
-#                         <sup style="color:#999;border-bottom:solid #999 1px;">script output</sup><br><b>{html.escape(sid)}</b> {html.escape(out)}
-#                     </div>
-#                 '''
+        # Scripts
+        so = ''
+        scripts = p.get('script', [])
+        if isinstance(scripts, dict):
+            scripts = [scripts]
+        for sosc in scripts:
+            sid = sosc.get('@id', '')
+            if sid and sid != 'fingerprint-strings':
+                out = sosc.get('@output', '')
+                so += f'''
+                    <div style="word-wrap: break-word; word-break: break-all; padding:6px; margin-left:6px; border-left:solid #666 1px; max-width:300px; font-size:12px; color:#ccc; font-family:monospace;">
+                        <sup style="color:#999;border-bottom:solid #999 1px;">script output</sup><br><b>{html.escape(sid)}</b> {html.escape(out)}
+                    </div>
+                '''
 
-#         # State counters
-#         if state == 'open':
-#             po += 1
-#         elif state == 'closed':
-#             pc += 1
-#         elif state == 'filtered':
-#             pf += 1
+        # State counters
+        if state == 'open':
+            po += 1
+        elif state == 'closed':
+            pc += 1
+        elif state == 'filtered':
+            pf += 1
 
-#         # Table Row
-#         r['tr'][portid] = {
-#             'service': servicename,
-#             'protocol': protocol,
-#             'portid': portid,
-#             'product': product,
-#             'version': version,
-#             'cpe': cpe_html,
-#             'state': state,
-#             'reason': reason,
-#             'extrainfo': extrainfo,
-#             'pel': str(pel)
-#         }
+        # Table Row
+        r['tr'][portid] = {
+            'service': servicename,
+            'protocol': protocol,
+            'portid': portid,
+            'product': product,
+            'version': version,
+            'cpe': cpe_html,
+            'state': state,
+            'reason': reason,
+            'extrainfo': extrainfo,
+            'pel': str(pel)
+        }
 
-#         badge = f'<span class="new badge blue" data-badge-caption="">{protocol} / {portid}</span>'
-#         curl = f"curl -v -A 'Mozilla/5.0' -k 'http://{address}:{portid}'"
-#         telnet = f"telnet {address} {portid}"
-#         nikto = f"nikto -host 'http://{address}:{portid}'"
+        badge = f'<span class="new badge blue" data-badge-caption="">{protocol} / {portid}</span>'
+        curl = f"curl -v -A 'Mozilla/5.0' -k 'http://{address}:{portid}'"
+        telnet = f"telnet {address} {portid}"
+        nikto = f"nikto -host 'http://{address}:{portid}'"
 
-#         r['trhost'] += f'''
-#         <tr>
-#             <td style="vertical-align:top;"><span style="color:#999;font-size:12px;">{servicename}</span><br>{badge}</td>
-#             <td>{product} / {version}<br><span style="font-size:12px;color:#999;">State: {state}<br>Reason: {reason}</span></td>
-#             <td style="vertical-align:top">{extrainfo}<br>{cpe_html}</td>
-#             <td>
-#                 <ul id="dropdown{pel}" class="dropdown-content" style="min-width:300px;">
-#                     <li><a href="#!" class="btncpy" data-clipboard-text="{curl}">Copy as curl</a></li>
-#                     <li><a href="#!" class="btncpy" data-clipboard-text="{nikto}">Copy as nikto</a></li>
-#                     <li><a href="#!" class="btncpy" data-clipboard-text="{telnet}">Copy as telnet</a></li>
-#                 </ul>
-#                 <a class="dropdown-trigger btn blue right" href="#!" data-target="dropdown{pel}"><i class="material-icons">arrow_drop_down</i></a>
-#                 <button onclick="apiPortDetails('{html.escape(address)}','{portid}');" class="btn blue right"><i class="material-icons">receipt</i></button>
-#             </td>
-#         </tr>
-#         '''
+        r['trhost'] += f'''
+        <tr>
+            <td style="vertical-align:top;"><span style="color:#999;font-size:12px;">{servicename}</span><br>{badge}</td>
+            <td>{product} / {version}<br><span style="font-size:12px;color:#999;">State: {state}<br>Reason: {reason}</span></td>
+            <td style="vertical-align:top">{extrainfo}<br>{cpe_html}</td>
+            <td>
+                <ul id="dropdown{pel}" class="dropdown-content" style="min-width:300px;">
+                    <li><a href="#!" class="btncpy" data-clipboard-text="{curl}">Copy as curl</a></li>
+                    <li><a href="#!" class="btncpy" data-clipboard-text="{nikto}">Copy as nikto</a></li>
+                    <li><a href="#!" class="btncpy" data-clipboard-text="{telnet}">Copy as telnet</a></li>
+                </ul>
+                <a class="dropdown-trigger btn blue right" href="#!" data-target="dropdown{pel}"><i class="material-icons">arrow_drop_down</i></a>
+                <button onclick="apiPortDetails('{html.escape(address)}','{portid}');" class="btn blue right"><i class="material-icons">receipt</i></button>
+            </td>
+        </tr>
+        '''
 
-#     # CVE
-#     cveout = ''
-#     if scanmd5 in cvehost and addressmd5 in cvehost[scanmd5]:
-#         cvejson = json.loads(cvehost[scanmd5][addressmd5])
-#         for entry in cvejson:
-#             listcve = entry if isinstance(entry, list) else [entry]
-#             for cveobj in listcve:
-#                 refs = ''.join([f'<a href="{ref}">{ref}</a><br>' for ref in cveobj.get('references', [])])
-#                 exdb = ''
-#                 if 'exploit-db' in cveobj:
-#                     exdb = '<br><b>Exploit DB:</b><br>' + ''.join(
-#                         [f'<a href="{e["source"]}">{html.escape(e["title"])}</a><br>' for e in cveobj['exploit-db'] if 'title' in e]
-#                     )
-#                 cveout += f'''
-#                     <div id="{html.escape(cveobj["id"])}" style="line-height:28px;padding:10px;border-bottom:solid #666 1px;margin-top:10px;">
-#                         <span class="label red">{html.escape(cveobj["id"])}</span> {html.escape(cveobj["summary"])}<br>
-#                         <div class="small" style="line-height:20px;"><b>References:</b><br>{refs}</div>
-#                         <div class="small">{exdb}</div>
-#                     </div>
-#                 '''
-#     r['cvelist'] = cveout
+    # CVE
+    cveout = ''
+    if scanmd5 in cvehost and addressmd5 in cvehost[scanmd5]:
+        cvejson = json.loads(cvehost[scanmd5][addressmd5])
+        for entry in cvejson:
+            listcve = entry if isinstance(entry, list) else [entry]
+            for cveobj in listcve:
+                refs = ''.join([f'<a href="{ref}">{ref}</a><br>' for ref in cveobj.get('references', [])])
+                exdb = ''
+                if 'exploit-db' in cveobj:
+                    exdb = '<br><b>Exploit DB:</b><br>' + ''.join(
+                        [f'<a href="{e["source"]}">{html.escape(e["title"])}</a><br>' for e in cveobj['exploit-db'] if 'title' in e]
+                    )
+                cveout += f'''
+                    <div id="{html.escape(cveobj["id"])}" style="line-height:28px;padding:10px;border-bottom:solid #666 1px;margin-top:10px;">
+                        <span class="label red">{html.escape(cveobj["id"])}</span> {html.escape(cveobj["summary"])}<br>
+                        <div class="small" style="line-height:20px;"><b>References:</b><br>{refs}</div>
+                        <div class="small">{exdb}</div>
+                    </div>
+                '''
+    r['cvelist'] = cveout
 
-#     # JS
-#     r['js'] = f'''
-#     <script>
-#     $(document).ready(function() {{
-#         var clipboard = new ClipboardJS(".btncpy");
-#         clipboard.on("success", function(e) {{
-#             M.toast({{html: "Copied to clipboard"}});
-#         }});
-#         $(".dropdown-trigger").dropdown();
-#         $("#detailspo").html('<center><h4><i class="fas fa-door-open green-text"></i> {po}</h4><span class="small grey-text">OPEN PORTS</span></center>');
-#         $("#detailspc").html('<center><h4><i class="fas fa-door-closed red-text"></i> {pc}</h4><span class="small grey-text">CLOSED PORTS</span></center>');
-#         $("#detailspf").html('<center><h4><i class="fas fa-filter grey-text"></i> {pf}</h4><span class="small grey-text">FILTERED PORTS</span></center>');
-#     }});
-#     </script>
-#     '''
+    # JS
+    r['js'] = f'''
+    <script>
+    $(document).ready(function() {{
+        var clipboard = new ClipboardJS(".btncpy");
+        clipboard.on("success", function(e) {{
+            M.toast({{html: "Copied to clipboard"}});
+        }});
+        $(".dropdown-trigger").dropdown();
+        $("#detailspo").html('<center><h4><i class="fas fa-door-open green-text"></i> {po}</h4><span class="small grey-text">OPEN PORTS</span></center>');
+        $("#detailspc").html('<center><h4><i class="fas fa-door-closed red-text"></i> {pc}</h4><span class="small grey-text">CLOSED PORTS</span></center>');
+        $("#detailspf").html('<center><h4><i class="fas fa-filter grey-text"></i> {pf}</h4><span class="small grey-text">FILTERED PORTS</span></center>');
+    }});
+    </script>
+    '''
 
-#     return render(request, 'nmapreport/nmap_portdetails.html', r)
+    return render(request, 'nmapreport/nmap_portdetails.html', r)
 
-# def details(request, address):
-# 	r = {}
+def details(request, address):
+	r = {}
 
-# 	if 'auth' not in request.session:
-# 		return render(request, 'nmapreport/nmap_auth.html', r)
-# 	else:
-# 		r['auth'] = True
+	if 'auth' not in request.session:
+		return render(request, 'nmapreport/nmap_auth.html', r)
+	else:
+		r['auth'] = True
 
-# 	oo = xmltodict.parse(open('/opt/xml/'+request.session['scanfile'], 'r').read())
-# 	r['out2'] = json.dumps(oo['nmaprun'], indent=4)
-# 	o = json.loads(r['out2'])
+	oo = xmltodict.parse(open('/opt/xml/'+request.session['scanfile'], 'r').read())
+	r['out2'] = json.dumps(oo['nmaprun'], indent=4)
+	o = json.loads(r['out2'])
 
-# 	r['trhost'] = ''
-# 	v,e,z,h = '','','',''
-# 	pc,po,pf=0,0,0
+	r['trhost'] = ''
+	v,e,z,h = '','','',''
+	pc,po,pf=0,0,0
 
-# 	scanmd5 = hashlib.md5(str(request.session['scanfile']).encode('utf-8')).hexdigest()
-# 	addressmd5 = hashlib.md5(str(address).encode('utf-8')).hexdigest()
+	scanmd5 = hashlib.md5(str(request.session['scanfile']).encode('utf-8')).hexdigest()
+	addressmd5 = hashlib.md5(str(address).encode('utf-8')).hexdigest()
 
-# 	# collect all labels in labelhost dict
-# 	labelhost = {}
-# 	labelfiles = os.listdir('/opt/notes')
-# 	for lf in labelfiles:
-# 		m = re.match('^('+scanmd5+')_([a-z0-9]{32,32})\.host\.label$', lf)
-# 		if m is not None:
-# 			if m.group(1) not in labelhost:
-# 				labelhost[m.group(1)] = {}
-# 			labelhost[m.group(1)][m.group(2)] = open('/opt/notes/'+lf, 'r').read()
+	# collect all labels in labelhost dict
+	labelhost = {}
+	labelfiles = os.listdir('/opt/notes')
+	for lf in labelfiles:
+		m = re.match('^('+scanmd5+')_([a-z0-9]{32,32})\.host\.label$', lf)
+		if m is not None:
+			if m.group(1) not in labelhost:
+				labelhost[m.group(1)] = {}
+			labelhost[m.group(1)][m.group(2)] = open('/opt/notes/'+lf, 'r').read()
 
-# 	# collect all notes in noteshost dict
-# 	noteshost = {}
-# 	notesfiles = os.listdir('/opt/notes')
-# 	for nf in notesfiles:
-# 		m = re.match('^('+scanmd5+')_([a-z0-9]{32,32})\.notes$', nf)
-# 		if m is not None:
-# 			if m.group(1) not in noteshost:
-# 				noteshost[m.group(1)] = {}
-# 			noteshost[m.group(1)][m.group(2)] = open('/opt/notes/'+nf, 'r').read()
+	# collect all notes in noteshost dict
+	noteshost = {}
+	notesfiles = os.listdir('/opt/notes')
+	for nf in notesfiles:
+		m = re.match('^('+scanmd5+')_([a-z0-9]{32,32})\.notes$', nf)
+		if m is not None:
+			if m.group(1) not in noteshost:
+				noteshost[m.group(1)] = {}
+			noteshost[m.group(1)][m.group(2)] = open('/opt/notes/'+nf, 'r').read()
 
-# 	# collect all cve in cvehost dict
-# 	cvehost = get_cve(scanmd5)
+	# collect all cve in cvehost dict
+	cvehost = get_cve(scanmd5)
 
-# 	r['trhead'] = '<tr><th>Port</th><th style="width:300px;">Product / Version</th><th>Extra Info</th><th>&nbsp;</th></tr>'
-# 	for ik in o['host']:
-# 		pel=0
-# 		# this fix single host report
-# 		if type(ik) is dict:
-# 			i = ik
-# 		else:
-# 			i = o['host']
+	r['trhead'] = '<tr><th>Port</th><th style="width:300px;">Product / Version</th><th>Extra Info</th><th>&nbsp;</th></tr>'
+	for ik in o['host']:
+		pel=0
+		# this fix single host report
+		if type(ik) is dict:
+			i = ik
+		else:
+			i = o['host']
 
-# 		if 'ports' not in i:
-# 			continue
+		if 'ports' not in i:
+			continue
 
-# 		if '@addr' in i['address']:
-# 			saddress = i['address']['@addr']
-# 		elif type(i['address']) is list:
-# 			for ai in i['address']:
-# 				if ai['@addrtype'] == 'ipv4':
-# 					saddress = ai['@addr'] 
+		if '@addr' in i['address']:
+			saddress = i['address']['@addr']
+		elif type(i['address']) is list:
+			for ai in i['address']:
+				if ai['@addrtype'] == 'ipv4':
+					saddress = ai['@addr'] 
 
-# 		if str(saddress) == address:
-# 			hostname = ''
-# 			if 'hostnames' in i and type(i['hostnames']) is dict:
-# 				# hostname = json.dumps(i['hostnames'])
-# 				if 'hostname' in i['hostnames']:
-# 					hostname += '<br>'
-# 					if type(i['hostnames']['hostname']) is list:
-# 						for hi in i['hostnames']['hostname']:
-# 							hostname += '<span class="small grey-text"><b>'+hi['@type']+':</b> '+hi['@name']+'</span><br>'
-# 					else:
-# 						hostname += '<span class="small grey-text"><b>'+i['hostnames']['hostname']['@type']+':</b> '+i['hostnames']['hostname']['@name']+'</span><br>'
+		if str(saddress) == address:
+			hostname = ''
+			if 'hostnames' in i and type(i['hostnames']) is dict:
+				# hostname = json.dumps(i['hostnames'])
+				if 'hostname' in i['hostnames']:
+					hostname += '<br>'
+					if type(i['hostnames']['hostname']) is list:
+						for hi in i['hostnames']['hostname']:
+							hostname += '<span class="small grey-text"><b>'+hi['@type']+':</b> '+hi['@name']+'</span><br>'
+					else:
+						hostname += '<span class="small grey-text"><b>'+i['hostnames']['hostname']['@type']+':</b> '+i['hostnames']['hostname']['@name']+'</span><br>'
 
-# 			r['address'] = html.escape(str(saddress))
-# 			r['hostname'] = hostname
+			r['address'] = html.escape(str(saddress))
+			r['hostname'] = hostname
 
-# 			scantitle = request.session['scanfile'].replace('.xml','').replace('_',' ')
-# 			if re.search('^webmapsched\_[0-9\.]+', request.session['scanfile']):
-# 				m = re.search('^webmapsched\_[0-9\.]+\_(.+)', request.session['scanfile'])
-# 				scantitle = m.group(1).replace('.xml','').replace('_',' ')
-# 			r['scanfile'] = scantitle
+			scantitle = request.session['scanfile'].replace('.xml','').replace('_',' ')
+			if re.search('^webmapsched\_[0-9\.]+', request.session['scanfile']):
+				m = re.search('^webmapsched\_[0-9\.]+\_(.+)', request.session['scanfile'])
+				scantitle = m.group(1).replace('.xml','').replace('_',' ')
+			r['scanfile'] = scantitle
 
 
-# 			labelout = '<span id="hostlabel"></span>'
-# 			if scanmd5 in labelhost:
-# 				if addressmd5 in labelhost[scanmd5]:
-# 					labelcolor = labelToColor(labelhost[scanmd5][addressmd5])
-# 					labelmargin = labelToMargin(labelhost[scanmd5][addressmd5])
-# 					labelout = '<span id="hostlabel" style="margin-left:60px;margin-top:-24px;" class="rightlabel '+labelcolor+'">'+html.escape(labelhost[scanmd5][addressmd5])+'</span>'
+			labelout = '<span id="hostlabel"></span>'
+			if scanmd5 in labelhost:
+				if addressmd5 in labelhost[scanmd5]:
+					labelcolor = labelToColor(labelhost[scanmd5][addressmd5])
+					labelmargin = labelToMargin(labelhost[scanmd5][addressmd5])
+					labelout = '<span id="hostlabel" style="margin-left:60px;margin-top:-24px;" class="rightlabel '+labelcolor+'">'+html.escape(labelhost[scanmd5][addressmd5])+'</span>'
 
-# 					r['label'] = html.escape(labelhost[scanmd5][addressmd5])
-# 					r['labelcolor'] = labelcolor
+					r['label'] = html.escape(labelhost[scanmd5][addressmd5])
+					r['labelcolor'] = labelcolor
 
-# 			rmdupl = {}
-# 			r['tr'] = {}
-# 			for pobj in i['ports']['port']:
-# 				if type(pobj) is dict:
-# 					p = pobj
-# 				else:
-# 					p = i['ports']['port']
+			rmdupl = {}
+			r['tr'] = {}
+			for pobj in i['ports']['port']:
+				if type(pobj) is dict:
+					p = pobj
+				else:
+					p = i['ports']['port']
 
-# 				if p['@portid'] in rmdupl:
-# 					continue
+				if p['@portid'] in rmdupl:
+					continue
 
-# 				rmdupl[p['@portid']] = 1
+				rmdupl[p['@portid']] = 1
 
-# 				if p['state']['@state'] == 'closed':
-# 					pc = (pc + 1)
-# 				elif p['state']['@state'] == 'open':
-# 					po = (po + 1)
-# 				elif p['state']['@state'] == 'filtered':
-# 					pf = (pf + 1)
+				if p['state']['@state'] == 'closed':
+					pc = (pc + 1)
+				elif p['state']['@state'] == 'open':
+					po = (po + 1)
+				elif p['state']['@state'] == 'filtered':
+					pf = (pf + 1)
 
-# 				pel = (pel + 1)
-# 				oshtml = ''
-# 				if 'service' in p:
-# 					if '@ostype' in p['service']:
-# 						oshtml = '<div style="font-family:monospace;padding:6px;margin:6px;border-left:solid #666 1px;"><sup style="border-bottom:solid #ccc 1px;">Operating System</sup><br>'+html.escape(p['service']['@ostype'])+'</div>'
+				pel = (pel + 1)
+				oshtml = ''
+				if 'service' in p:
+					if '@ostype' in p['service']:
+						oshtml = '<div style="font-family:monospace;padding:6px;margin:6px;border-left:solid #666 1px;"><sup style="border-bottom:solid #ccc 1px;">Operating System</sup><br>'+html.escape(p['service']['@ostype'])+'</div>'
 
-# 				so = ''
-# 				if 'script' in p:
-# 					if '@id' in p['script']:
-# 						if p['script']['@id'] != 'fingerprint-strings':
-# 							so += '<div style="word-wrap: break-word;word-break: break-all;padding:6px;margin-left:6px;border-left:solid #666 1px;max-width:300px;font-size:12px;color:#ccc;font-family:monospace;"><sup style="color:#999;border-bottom:solid #999 1px;">script output</sup><br><b>'+html.escape(p['script']['@id'])+'</b> '+html.escape(p['script']['@output'])+'</div>'
-# 					else:
-# 						for sosc in p['script']:
-# 							if '@id' in sosc:
-# 								if sosc['@id'] != 'fingerprint-strings':
-# 									so += '<div style="word-wrap: break-word;word-break: break-all;padding:6px;margin:6px;border-left:solid #666 1px;max-width:300px;font-size:12px;color:#ccc;font-family:monospace;"><sup style="color:#999;border-bottom:solid #999 1px;">script output</sup><br><b>'+html.escape(sosc['@id'])+'</b> '+html.escape(sosc['@output'])+'</div>'
+				so = ''
+				if 'script' in p:
+					if '@id' in p['script']:
+						if p['script']['@id'] != 'fingerprint-strings':
+							so += '<div style="word-wrap: break-word;word-break: break-all;padding:6px;margin-left:6px;border-left:solid #666 1px;max-width:300px;font-size:12px;color:#ccc;font-family:monospace;"><sup style="color:#999;border-bottom:solid #999 1px;">script output</sup><br><b>'+html.escape(p['script']['@id'])+'</b> '+html.escape(p['script']['@output'])+'</div>'
+					else:
+						for sosc in p['script']:
+							if '@id' in sosc:
+								if sosc['@id'] != 'fingerprint-strings':
+									so += '<div style="word-wrap: break-word;word-break: break-all;padding:6px;margin:6px;border-left:solid #666 1px;max-width:300px;font-size:12px;color:#ccc;font-family:monospace;"><sup style="color:#999;border-bottom:solid #999 1px;">script output</sup><br><b>'+html.escape(sosc['@id'])+'</b> '+html.escape(sosc['@output'])+'</div>'
 
-# 				v,z,e = '','','<i class="grey-text">N/A</i>'
-# 				if p['state']['@state'] == 'open':
-# 					if 'service' in p:
-# 						if '@version' in p['service']:
-# 							v = p['service']['@version']
-# 						else:
-# 							v = '<i class="grey-text">No Version</i>'
+				v,z,e = '','','<i class="grey-text">N/A</i>'
+				if p['state']['@state'] == 'open':
+					if 'service' in p:
+						if '@version' in p['service']:
+							v = p['service']['@version']
+						else:
+							v = '<i class="grey-text">No Version</i>'
 
-# 						if '@product' in p['service']:
-# 							z = p['service']['@product']
-# 						else:
-# 							z = '<i class="grey-text">No Product</i>'
+						if '@product' in p['service']:
+							z = p['service']['@product']
+						else:
+							z = '<i class="grey-text">No Product</i>'
 
-# 						if '@extrainfo' in p['service']:
-# 							e = p['service']['@extrainfo']
+						if '@extrainfo' in p['service']:
+							e = p['service']['@extrainfo']
 
-# 						cpe = ''
-# 						if 'cpe' in p['service']:
-# 							if type(p['service']['cpe']) is list:
-# 								for cpei in p['service']['cpe']:
-# 									cpe += '<div class="grey-text" style="font-family:monospace;font-size:12px;">'+html.escape(cpei)+'</div>'
-# 							else:
-# 									cpe = '<div class="grey-text" style="font-family:monospace;font-size:12px;">'+html.escape(p['service']['cpe'])+'</div>'
+						cpe = ''
+						if 'cpe' in p['service']:
+							if type(p['service']['cpe']) is list:
+								for cpei in p['service']['cpe']:
+									cpe += '<div class="grey-text" style="font-family:monospace;font-size:12px;">'+html.escape(cpei)+'</div>'
+							else:
+									cpe = '<div class="grey-text" style="font-family:monospace;font-size:12px;">'+html.escape(p['service']['cpe'])+'</div>'
 
-# 						servicename = p['service']['@name']
-# 					else:
-# 						servicename = ''
+						servicename = p['service']['@name']
+					else:
+						servicename = ''
 							
-# 					r['tr'][p['@portid']] = {
-# 						'service': servicename,
-# 						'protocol': p['@protocol'],
-# 						'portid': p['@portid'],
-# 						'product': z,
-# 						'version': v,
-# 						'cpe':cpe,
-# 						'state': p['state']['@state'],
-# 						'reason': p['state']['@reason'],
-# 						'extrainfo': e,
-# 						'pel': str(pel)
-# 					}
+					r['tr'][p['@portid']] = {
+						'service': servicename,
+						'protocol': p['@protocol'],
+						'portid': p['@portid'],
+						'product': z,
+						'version': v,
+						'cpe':cpe,
+						'state': p['state']['@state'],
+						'reason': p['state']['@reason'],
+						'extrainfo': e,
+						'pel': str(pel)
+					}
 
-# 					r['trhost'] += '<tr><td style="vertical-align:top;">'+\
-# 					'<span style="color:#999;font-size:12px;">'+servicename+'</span><br>'+\
-# 					'<span class="new badge blue" data-badge-caption="">'+p['@protocol']+' / '+p['@portid']+'</span>'+\
-# 					'</td>'+\
-# 					'<td>'+z+' / '+v+'<br><span style="font-size:12px;color:#999;">State: '+p['state']['@state']+'<br>Reason: '+p['state']['@reason']+'</span></td>'+\
-# 					'<td style="vertical-align:top">'+e+'<br>'+cpe+'</td>'+\
-# 					'<td><ul id="dropdown'+str(pel)+'" class="dropdown-content" style="min-width:300px;">'+\
-# 					'	<li><a href="#!" class="btncpy" data-clipboard-text="curl -v -A \'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1\' -k \'http://'+html.escape(address)+':'+html.escape(p['@portid'])+'\'">Copy as curl command</a></li>'+\
-# 					'	<li><a href="#!" class="btncpy" data-clipboard-text="nikto -host \'http://'+html.escape(address)+':'+html.escape(p['@portid'])+'\'">Copy as nikto command</a></li>'+\
-# 					'	<li><a href="#!" class="btncpy" data-clipboard-text="telnet '+html.escape(address)+' '+html.escape(p['@portid'])+'">Copy as telnet command</a></li>'+\
-# 					'</ul><a class="dropdown-trigger btn blue right" href="#!" data-target="dropdown'+str(pel)+'"><i class="material-icons">arrow_drop_down</i></a> '+\
-# 					'<button onclick="javascript:apiPortDetails(\''+html.escape(address)+'\',\''+html.escape(p['@portid'])+'\');" class="btn blue right"><i class="material-icons">receipt</i></button></td>'+\
-# 					'</tr>'
-# 				elif p['state']['@state'] == 'filtered':
-# 					if 'service' in p:
-# 						servicename = p['service']['@name']
-# 					else:
-# 						servicename = ''
+					r['trhost'] += '<tr><td style="vertical-align:top;">'+\
+					'<span style="color:#999;font-size:12px;">'+servicename+'</span><br>'+\
+					'<span class="new badge blue" data-badge-caption="">'+p['@protocol']+' / '+p['@portid']+'</span>'+\
+					'</td>'+\
+					'<td>'+z+' / '+v+'<br><span style="font-size:12px;color:#999;">State: '+p['state']['@state']+'<br>Reason: '+p['state']['@reason']+'</span></td>'+\
+					'<td style="vertical-align:top">'+e+'<br>'+cpe+'</td>'+\
+					'<td><ul id="dropdown'+str(pel)+'" class="dropdown-content" style="min-width:300px;">'+\
+					'	<li><a href="#!" class="btncpy" data-clipboard-text="curl -v -A \'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1\' -k \'http://'+html.escape(address)+':'+html.escape(p['@portid'])+'\'">Copy as curl command</a></li>'+\
+					'	<li><a href="#!" class="btncpy" data-clipboard-text="nikto -host \'http://'+html.escape(address)+':'+html.escape(p['@portid'])+'\'">Copy as nikto command</a></li>'+\
+					'	<li><a href="#!" class="btncpy" data-clipboard-text="telnet '+html.escape(address)+' '+html.escape(p['@portid'])+'">Copy as telnet command</a></li>'+\
+					'</ul><a class="dropdown-trigger btn blue right" href="#!" data-target="dropdown'+str(pel)+'"><i class="material-icons">arrow_drop_down</i></a> '+\
+					'<button onclick="javascript:apiPortDetails(\''+html.escape(address)+'\',\''+html.escape(p['@portid'])+'\');" class="btn blue right"><i class="material-icons">receipt</i></button></td>'+\
+					'</tr>'
+				elif p['state']['@state'] == 'filtered':
+					if 'service' in p:
+						servicename = p['service']['@name']
+					else:
+						servicename = ''
 
-# 					r['tr'][p['@portid']] = {
-# 						'service': servicename,
-# 						'protocol': p['@protocol'],
-# 						'portid': p['@portid'],
-# 						'state': p['state']['@state'],
-# 						'reason': p['state']['@reason'],
-# 						'pel': str(pel)
-# 					}
-# 					r['trhost'] += '<tr><td><span class="new badge grey" data-badge-caption="">'+p['@protocol']+' / '+p['@portid']+'</span><br>'+\
-# 					'<span style="color:#999;font-size:12px;">'+servicename+'</span></td>'+\
-# 					'<td colspan="2" style="color:#999;font-size:12px;">State: filtered<br>Reason: '+p['state']['@reason']+'</td>'+\
-# 					'<td><button onclick="javascript:apiPortDetails(\''+html.escape(address)+'\',\''+html.escape(p['@portid'])+'\');" class="btn blue right"><i class="material-icons">receipt</i></button></td></tr>'
-# 				else:
-# 					if 'service' in p:
-# 						servicename = p['service']['@name']
-# 					else:
-# 						servicename = ''
+					r['tr'][p['@portid']] = {
+						'service': servicename,
+						'protocol': p['@protocol'],
+						'portid': p['@portid'],
+						'state': p['state']['@state'],
+						'reason': p['state']['@reason'],
+						'pel': str(pel)
+					}
+					r['trhost'] += '<tr><td><span class="new badge grey" data-badge-caption="">'+p['@protocol']+' / '+p['@portid']+'</span><br>'+\
+					'<span style="color:#999;font-size:12px;">'+servicename+'</span></td>'+\
+					'<td colspan="2" style="color:#999;font-size:12px;">State: filtered<br>Reason: '+p['state']['@reason']+'</td>'+\
+					'<td><button onclick="javascript:apiPortDetails(\''+html.escape(address)+'\',\''+html.escape(p['@portid'])+'\');" class="btn blue right"><i class="material-icons">receipt</i></button></td></tr>'
+				else:
+					if 'service' in p:
+						servicename = p['service']['@name']
+					else:
+						servicename = ''
 
-# 					r['tr'][p['@portid']] = {
-# 						'service': servicename,
-# 						'protocol': p['@protocol'],
-# 						'portid': p['@portid'],
-# 						'state': p['state']['@state'],
-# 						'reason': p['state']['@reason'],
-# 						'pel': str(pel)
-# 					}
-# 					r['trhost'] += '<tr><td><span class="new badge grey" data-badge-caption="">'+p['@protocol']+' / '+p['@portid']+'</span><br>'+\
-# 					'<span style="color:#999;font-size:12px;">'+servicename+'</span></td>'+\
-# 					'<td colspan="2" style="color:#999;font-size:12px;">State: '+p['state']['@state']+'<br>Reason: '+p['state']['@reason']+'</td>'+\
-# 					'<td><button onclick="javascript:apiPortDetails(\''+html.escape(address)+'\',\''+html.escape(p['@portid'])+'\');" class="btn blue right"><i class="material-icons">receipt</i></button></td></tr>'
+					r['tr'][p['@portid']] = {
+						'service': servicename,
+						'protocol': p['@protocol'],
+						'portid': p['@portid'],
+						'state': p['state']['@state'],
+						'reason': p['state']['@reason'],
+						'pel': str(pel)
+					}
+					r['trhost'] += '<tr><td><span class="new badge grey" data-badge-caption="">'+p['@protocol']+' / '+p['@portid']+'</span><br>'+\
+					'<span style="color:#999;font-size:12px;">'+servicename+'</span></td>'+\
+					'<td colspan="2" style="color:#999;font-size:12px;">State: '+p['state']['@state']+'<br>Reason: '+p['state']['@reason']+'</td>'+\
+					'<td><button onclick="javascript:apiPortDetails(\''+html.escape(address)+'\',\''+html.escape(p['@portid'])+'\');" class="btn blue right"><i class="material-icons">receipt</i></button></td></tr>'
 
-# 		# this fix single host report
-# 		if type(ik) is not dict:
-# 			break;
+		# this fix single host report
+		if type(ik) is not dict:
+			break;
 
-# 	r['table'] = ''
-# 	notesout,notesb64,removenotes = '','',''
-# 	if scanmd5 in noteshost:
-# 		if addressmd5 in noteshost[scanmd5]:
-# 			notesb64 = noteshost[scanmd5][addressmd5]
-# 			r['table'] += '<div class="card" style="background-color:#3e3e3e;">'+\
-# 			'	<div class="card-content"><h5>Notes</h5>'+\
-# 			'		'+base64.b64decode(urllib.parse.unquote(notesb64)).decode('ascii')+\
-# 			'	</div>'+\
-# 			'</div>'
-# 			r['notes'] = base64.b64decode(urllib.parse.unquote(notesb64)).decode('ascii')
+	r['table'] = ''
+	notesout,notesb64,removenotes = '','',''
+	if scanmd5 in noteshost:
+		if addressmd5 in noteshost[scanmd5]:
+			notesb64 = noteshost[scanmd5][addressmd5]
+			r['table'] += '<div class="card" style="background-color:#3e3e3e;">'+\
+			'	<div class="card-content"><h5>Notes</h5>'+\
+			'		'+base64.b64decode(urllib.parse.unquote(notesb64)).decode('ascii')+\
+			'	</div>'+\
+			'</div>'
+			r['notes'] = base64.b64decode(urllib.parse.unquote(notesb64)).decode('ascii')
 
-# 	cveout = ''
-# 	if scanmd5 in cvehost:
-# 		if addressmd5 in cvehost[scanmd5]:
-# 			cvejson = json.loads(cvehost[scanmd5][addressmd5])
-# 			cveids = {}
+	cveout = ''
+	if scanmd5 in cvehost:
+		if addressmd5 in cvehost[scanmd5]:
+			cvejson = json.loads(cvehost[scanmd5][addressmd5])
+			cveids = {}
 
-# 			for i in cvejson:
-# 				if type(i) is list:
-# 					listcve = i
-# 					#cveout += 'list<hr>'
-# 				elif type(i) is dict:
-# 					listcve = [i]
-# 					#cveout += 'dict<hr>'
-# 				#continue
+			for i in cvejson:
+				if type(i) is list:
+					listcve = i
+					#cveout += 'list<hr>'
+				elif type(i) is dict:
+					listcve = [i]
+					#cveout += 'dict<hr>'
+				#continue
 
-# 				for cveobj in listcve:
-# 					cverefout = ''
-# 					for cveref in cveobj['references']:
-# 						cverefout += '<a href="'+cveref+'">'+cveref+'</a><br>'
+				for cveobj in listcve:
+					cverefout = ''
+					for cveref in cveobj['references']:
+						cverefout += '<a href="'+cveref+'">'+cveref+'</a><br>'
 
-# 					cveexdbout = ''
-# 					if 'exploit-db' in cveobj:
-# 						cveexdbout = '<br><div class="small" style="line-height:20px;"><b>Exploit DB:</b><br>'
-# 						for cveexdb in cveobj['exploit-db']:
-# 							if 'title' in cveexdb:
-# 								cveexdbout += '<a href="'+cveexdb['source']+'">'+html.escape(cveexdb['title'])+'</a><br>'
-# 						cveexdbout += '</div>'
+					cveexdbout = ''
+					if 'exploit-db' in cveobj:
+						cveexdbout = '<br><div class="small" style="line-height:20px;"><b>Exploit DB:</b><br>'
+						for cveexdb in cveobj['exploit-db']:
+							if 'title' in cveexdb:
+								cveexdbout += '<a href="'+cveexdb['source']+'">'+html.escape(cveexdb['title'])+'</a><br>'
+						cveexdbout += '</div>'
 
-# 					cveout += '<div id="'+html.escape(cveobj['id'])+'" style="line-height:28px;padding:10px;border-bottom:solid #666 1px;margin-top:10px;">'+\
-# 					'	<span class="label red">'+html.escape(cveobj['id'])+'</span> '+html.escape(cveobj['summary'])+'<br><br>'+\
-# 					'	<div class="small" style="line-height:20px;"><b>References:</b><br>'+cverefout+'</div>'+\
-# 					cveexdbout+\
-# 					'</div>'
-# 					cveids[cveobj['id']] = cveobj['id']
+					cveout += '<div id="'+html.escape(cveobj['id'])+'" style="line-height:28px;padding:10px;border-bottom:solid #666 1px;margin-top:10px;">'+\
+					'	<span class="label red">'+html.escape(cveobj['id'])+'</span> '+html.escape(cveobj['summary'])+'<br><br>'+\
+					'	<div class="small" style="line-height:20px;"><b>References:</b><br>'+cverefout+'</div>'+\
+					cveexdbout+\
+					'</div>'
+					cveids[cveobj['id']] = cveobj['id']
 				
-# 			r['cveids'] = cveids
-# 			r['cvelist'] = cveout
+			r['cveids'] = cveids
+			r['cvelist'] = cveout
 
-# 	r['js'] = '<script> '+\
-# 	'$(document).ready(function() { '+\
-# 	'	$("#scantitle").html("'+html.escape(request.session['scanfile'])+'");'+\
-# 	'	var clipboard = new ClipboardJS(".btncpy"); '+\
-# 	'	clipboard.on("success", function(e) { '+\
-# 	'		M.toast({html: "Copied to clipboard"}); '+\
-# 	'	}); '+\
-# 	'	$(".dropdown-trigger").dropdown(); '+\
-# 	'	$("#detailspo").html(\'<center><h4><i class="fas fa-door-open green-text"></i> '+str(po)+'</h4><span class="small grey-text">OPEN PORTS</span></center>\');'+\
-# 	'	$("#detailspc").html(\'<center><h4><i class="fas fa-door-closed red-text"></i> '+str(pc)+'</h4><span class="small grey-text">CLOSED PORTS</span></center>\');'+\
-# 	'	$("#detailspf").html(\'<center><h4><i class="fas fa-filter grey-text"></i> '+str(pf)+'</h4><span class="small grey-text">FILTERED PORTS</span></center>\');'+\
-# 	'}); '+\
-# 	'</script>'
+	r['js'] = '<script> '+\
+	'$(document).ready(function() { '+\
+	'	$("#scantitle").html("'+html.escape(request.session['scanfile'])+'");'+\
+	'	var clipboard = new ClipboardJS(".btncpy"); '+\
+	'	clipboard.on("success", function(e) { '+\
+	'		M.toast({html: "Copied to clipboard"}); '+\
+	'	}); '+\
+	'	$(".dropdown-trigger").dropdown(); '+\
+	'	$("#detailspo").html(\'<center><h4><i class="fas fa-door-open green-text"></i> '+str(po)+'</h4><span class="small grey-text">OPEN PORTS</span></center>\');'+\
+	'	$("#detailspc").html(\'<center><h4><i class="fas fa-door-closed red-text"></i> '+str(pc)+'</h4><span class="small grey-text">CLOSED PORTS</span></center>\');'+\
+	'	$("#detailspf").html(\'<center><h4><i class="fas fa-filter grey-text"></i> '+str(pf)+'</h4><span class="small grey-text">FILTERED PORTS</span></center>\');'+\
+	'}); '+\
+	'</script>'
 
-# 	return render(request, 'nmapreport/nmap_portdetails.html', r)
+	return render(request, 'nmapreport/nmap_portdetails.html', r)
 
 
 def main_index(request, subpath=""):
@@ -819,64 +794,64 @@ def index(request, filterservice="", filterportid=""):
 		oo = xmltodict.parse(open('/opt/xml/'+request.session['scanfile'], 'r').read())
 		r['out2'] = json.dumps(oo['nmaprun'], indent=4)
 		o = json.loads(r['out2'])
-	else:
-		# no file selected
-		xmlfiles = os.listdir('/opt/xml')
+	# else:
+	# 	# no file selected
+	# 	xmlfiles = os.listdir('/opt/xml')
 
-		r['tr'] = {}
-		r['stats'] = { 'po':0, 'pc':0, 'pf':0}
+	# 	r['tr'] = {}
+	# 	r['stats'] = { 'po':0, 'pc':0, 'pf':0}
 
-		xmlfilescount = 0
-		for i in xmlfiles:
-			if re.search('\.xml$', i) is None:
-				continue
+	# 	xmlfilescount = 0
+	# 	for i in xmlfiles:
+	# 		if re.search('\.xml$', i) is None:
+	# 			continue
 
-			#portstats = {}
-			xmlfilescount = (xmlfilescount + 1)
+	# 		#portstats = {}
+	# 		xmlfilescount = (xmlfilescount + 1)
 
-			try:
-				oo = xmltodict.parse(open('/opt/xml/'+i, 'r').read())
-			except:
-				r['tr'][i] = {'filename':html.escape(i), 'start': 0, 'startstr': 'Incomplete / Invalid', 'hostnum':0, 'href':'#!', 'portstats':{'po':0,'pc':0,'pf':0}}
-				continue
+	# 		try:
+	# 			oo = xmltodict.parse(open('/opt/xml/'+i, 'r').read())
+	# 		except:
+	# 			r['tr'][i] = {'filename':html.escape(i), 'start': 0, 'startstr': 'Incomplete / Invalid', 'hostnum':0, 'href':'#!', 'portstats':{'po':0,'pc':0,'pf':0}}
+	# 			continue
 
-			r['out2'] = json.dumps(oo['nmaprun'], indent=4)
-			o = json.loads(r['out2'])
+	# 		r['out2'] = json.dumps(oo['nmaprun'], indent=4)
+	# 		o = json.loads(r['out2'])
 
-			if 'host' in o:
-				if type(o['host']) is not dict:
-					hostnum = str(len(o['host']))
-				else:
-					hostnum = '1'
-			else:
-				hostnum = '0'
+	# 		if 'host' in o:
+	# 			if type(o['host']) is not dict:
+	# 				hostnum = str(len(o['host']))
+	# 			else:
+	# 				hostnum = '1'
+	# 		else:
+	# 			hostnum = '0'
 
-			if hostnum != '0':
-				viewhref = '/setscanpath/'+html.escape(i)
-			else:
-				viewhref = '#!'
+	# 		if hostnum != '0':
+	# 			viewhref = '/setscanpath/'+html.escape(i)
+	# 		else:
+	# 			viewhref = '#!'
 
-			filename = i
+	# 		filename = i
 
-			portstats = nmap_ports_stats(i)
+	# 		portstats = nmap_ports_stats(i)
 
-			r['stats']['po'] = (r['stats']['po'] + portstats['po'])
-			r['stats']['pc'] = (r['stats']['pc'] + portstats['pc'])
-			r['stats']['pf'] = (r['stats']['pf'] + portstats['pf'])
+	# 		r['stats']['po'] = (r['stats']['po'] + portstats['po'])
+	# 		r['stats']['pc'] = (r['stats']['pc'] + portstats['pc'])
+	# 		r['stats']['pf'] = (r['stats']['pf'] + portstats['pf'])
 
-			r['tr'][o['@start']] = {
-				'filename':filename,
-				'start': o['@start'],
-				'startstr': html.escape(o['@startstr']),
-				'hostnum':hostnum,
-				'href':viewhref,
-				'portstats':portstats
-			}
+	# 		r['tr'][o['@start']] = {
+	# 			'filename':filename,
+	# 			'start': o['@start'],
+	# 			'startstr': html.escape(o['@startstr']),
+	# 			'hostnum':hostnum,
+	# 			'href':viewhref,
+	# 			'portstats':portstats
+	# 		}
 
-		r['tr'] = OrderedDict(sorted(r['tr'].items()))
-		r['stats']['xmlcount'] = xmlfilescount
+	# 	r['tr'] = OrderedDict(sorted(r['tr'].items()))
+	# 	r['stats']['xmlcount'] = xmlfilescount
 
-		return render(request, 'nmapreport/nmap_xmlfiles.html', r)
+	# 	return render(request, 'nmapreport/nmap_xmlfiles.html', r)
 
 	scanmd5 = hashlib.md5(str(request.session['scanfile']).encode('utf-8')).hexdigest()
 	r['scanfile'] = html.escape(str(request.session['scanfile']))
@@ -1305,59 +1280,5 @@ def about(request):
 
 	return render(request, 'nmapreport/nmap_about.html', r)
 
-def select_scanfolder(request):
-    print("In select_scanfolder, method:", request.method)
 
-    base_dir = '/opt/xml'
-    folders = [f for f in os.listdir(base_dir) if os.path.isdir(os.path.join(base_dir, f))]
-    print("Folders available:", folders)
-
-    if request.method == "POST":
-        selected = request.POST.get("folder")
-        print("POST received, selected folder:", selected)
-
-        if selected and selected in folders:
-            folder_path = os.path.join(base_dir, selected)
-            request.session['scanfolder'] = folder_path
-            request.session.modified = True
-            print("Session set:", request.session['scanfolder'])
-            return redirect('home')
-
-        print("Invalid folder selected")
-        return render(request, 'nmapreport/select_scanfolder.html', {
-            'folders': folders,
-            'error': 'Invalid folder selected'
-        })
-
-    return render(request, 'nmapreport/select_scanfolder.html', {
-        'folders': folders
-    })
 		
-def select_scanproject(request,sub_path=""):
-    
-
-    base_dir = '/opt/xml'
-    folders = [f for f in os.listdir(base_dir) if os.path.isdir(os.path.join(base_dir, f))]
-    print("Folders available:", folders)
-
-    if request.method == "POST":
-        clicked = request.POST.get("folder")
-        selected = request.POST.get("folder")
-        print("POST received, selected folder:", selected)
-
-        if selected and selected in folders:
-            folder_path = os.path.join(base_dir, selected)
-            request.session['scanfolder'] = folder_path
-            request.session.modified = True
-            print("Session set:", request.session['scanfolder'])
-            return render(request, 'nmapreport/nmap_xmlfiles.html', {'folder_path': folder_path})
-
-        print("Invalid folder selected")
-        return render(request, 'nmapreport/select_scanproject.html', {
-            'folders': folders,
-            'error': 'Invalid folder selected'
-        })
-
-    return render(request, 'nmapreport/select_project.html', {
-        'folders': folders
-    })

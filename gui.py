@@ -3,11 +3,19 @@ from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk  # Pillow library
 import subprocess
 import sys
+from ingestor.cvecollector import *
+
 
 def run_script():
     targets = target_entry.get().strip()
     output_dir = output_dir_entry.get().strip()
-    
+    cve_output_name= cve_output_name_entry.get().strip()
+    if  cve_output_name=="":
+        cve_output_name="cve_output.json"
+    if not cve_output_name.endswith('.json'):
+        cve_output_name+='.json'
+    cve_output = output_dir +"/"+cve_output_name
+    print(cve_output)
     # Collect selected options into a single quoted string
     selected_options = []
     if sV_var.get():
@@ -28,7 +36,7 @@ def run_script():
         return
 
     # Build command
-    cmd = [sys.executable, "rustIngestor.py"]
+    cmd = [sys.executable, "ingestor/rustIngestor.py"]
     if targets:
         cmd += targets.split()
     if output_dir:
@@ -48,7 +56,12 @@ def run_script():
     # Debug: print the command
     print("Running command:", " ".join(cmd))
 
-    subprocess.run(cmd)
+    result = subprocess.run(cmd)
+
+    if result.returncode == 0:
+        runcvecollector(output_dir,cve_output)
+    else:
+        messagebox.showerror("Error", f"Script failed with return code {result.returncode}")
 
 # GUI layout
 
@@ -76,6 +89,8 @@ tk.Label(frame, text="Output Directory:").grid(row=1, column=0, sticky="w")
 output_dir_entry = tk.Entry(frame, width=50)
 output_dir_entry.grid(row=1, column=1)
 
+
+
 tk.Label(frame, text="Options:").grid(row=2, column=0, sticky="w")
 sV_var = tk.BooleanVar(value=True)
 A_var = tk.BooleanVar()
@@ -101,6 +116,10 @@ tk.Label(frame, text="Custom Ports:").grid(row=8, column=0, sticky="w")
 ports_entry = tk.Entry(frame, width=50)
 ports_entry.grid(row=8, column=1)
 
-tk.Button(frame, text="Run", command=run_script).grid(row=9, column=1, pady=10)
+tk.Label(frame, text="cve Collector filename:").grid(row=9, column=0, sticky="w")
+cve_output_name_entry = tk.Entry(frame, width=50)
+cve_output_name_entry.grid(row=9, column=1)
+
+tk.Button(frame, text="Run", command=run_script).grid(row=10, column=1, pady=10)
 
 root.mainloop()
