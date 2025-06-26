@@ -77,8 +77,13 @@
                     <i class="fas fa-folder yellow-text"></i> {{ v.filename|cut:request.session.path }}
                   </a>
                 </td>
-                <td colspan="2" class="hide-on-small-only">—</td>
-                <td class="hide-on-small-only">—</td>
+                <td class="hide-on-small-only"><code>{{ v.startstr }}</code></td>
+                <td class="hide-on-small-only">{{ v.hostnum }}</td>
+                <td class="hide-on-small-only">
+                  <i class="fas fa-door-open green-text"></i> {{ v.portstats.po }} &nbsp;
+                  <i class="fas fa-door-closed red-text"></i> {{ v.portstats.pc }} &nbsp;
+                  <i class="fas fa-filter grey-text"></i> {{ v.portstats.pf }}
+                </td>
                 <td>
                   <a href="/setscanpath/{{ v.filename }}" class="btn-small blue">Pick Folder</a>
                 </td>

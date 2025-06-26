@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from PIL import Image, ImageTk  # Pillow library
+from PIL import Image, ImageTk  # type: ignore # Pillow library
 import subprocess
 import sys
 from ingestor.cvecollector import *
