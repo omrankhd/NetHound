@@ -10,7 +10,7 @@
       <code>{{ path }}</code>
       {% if parent_path %}
       <a href="{% url 'browse' parent_path %}" class="btn-flat right">
-        <i class="fas fa-level-up-alt"></i> Up
+        <i class="fas fa-level-up-alt"></i> Back
       </a>
     {% endif %}
     
@@ -85,8 +85,20 @@
                   <i class="fas fa-filter grey-text"></i> {{ v.portstats.pf }}
                 </td>
                 <td>
-                  <a href="/setscanpath/{{ v.filename }}" class="btn-small blue">Pick Folder</a>
+                  {% if v.hostnum > 0 %}
+                    <a href="{{ v.href }}" class="btn-small green">
+                      <i class="material-icons left">folder_open</i> Pick Folder
+                    </a>
+                  {% else %}
+                    <a href="{{ v.href }}" class="btn-small grey">
+                      <i class="material-icons left">folder</i> Browse Folder
+                    </a>
+                  {% endif %}
                 </td>
+                <!-- <td>
+                  
+                  <a href="/setscanpath/{{ v.filename }}" class="btn-small blue">Pick Folder</a>
+                </td> -->
               </tr>
             {% endif %}
           {% endfor %}
@@ -106,10 +118,15 @@
                 </td>
                 <td>
                   {% if v.href != "#!" %}
-                    <a href="{{ v.href }}" class="btn-small green">Pick File</a>
-                  {% else %}
-                    <span class="grey-text">Invalid</span>
-                  {% endif %}
+                  <a href="{{ v.href }}" class="btn-small green">
+                    <i class="material-icons left">insert_drive_file</i> Pick File
+                  </a>
+                {% else %}
+                  <span class="grey-text">
+                    <i class="material-icons left">error_outline</i> Invalid
+                  </span>
+                {% endif %}
+                
                 </td>
               </tr>
             {% endif %}

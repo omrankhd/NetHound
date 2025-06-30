@@ -30,6 +30,8 @@ def setscanpath(request, scanname):
     if scanname == 'unset':
         request.session.pop('scanfile', None)
         request.session.pop('scanfolder', None)
+        return redirect('/') 
+        
     else:
         full_path = os.path.join('/opt/xml', scanname)
         print ("full_path",full_path)
@@ -622,25 +624,25 @@ def main_index(request, subpath="",filterservice="", filterportid=""):
 					return render(request, 'nmapreport/nmap_hostdetails.html', {
 								'js': '<script> location.href="/index"; </script>'
 					})
-			elif selected_file.endswith('.json'):
-				print("seletedjsonfile")
-				jsonpath = os.path.join(xml_base, selected_file)
-				print(jsonpath)
-				with open(jsonpath, 'r') as f:
-					try:
-						jdata = json.load(f)
-						# If structure is same as XML-converted, access 'nmaprun'
-						if 'open_ports' in jdata:
-							r['out2'] = json.dumps(jdata['open_ports'], indent=4)
-							print("if",r['out2'])
-						else:
-							r['out2'] = json.dumps(jdata, indent=4)
-							print("else:",r['out2'])
-					except Exception as e:
-						r['out2'] = f"Failed to parse JSON: {html.escape(str(e))}"
-					return render(request, 'nmapreport/nmap_hostdetails.html', {
-								'js': '<script> location.href="/index"; </script>'
-					})
+			# elif selected_file.endswith('.json'):
+			# 	print("seletedjsonfile")
+			# 	jsonpath = os.path.join(xml_base, selected_file)
+			# 	print(jsonpath)
+			# 	with open(jsonpath, 'r') as f:
+			# 		try:
+			# 			jdata = json.load(f)
+			# 			# If structure is same as XML-converted, access 'nmaprun'
+			# 			if 'open_ports' in jdata:
+			# 				r['out2'] = json.dumps(jdata['open_ports'], indent=4)
+			# 				print("if",r['out2'])
+			# 			else:
+			# 				r['out2'] = json.dumps(jdata, indent=4)
+			# 				print("else:",r['out2'])
+			# 		except Exception as e:
+			# 			r['out2'] = f"Failed to parse JSON: {html.escape(str(e))}"
+			# 		return render(request, 'nmapreport/nmap_hostdetails.html', {
+			# 					'js': '<script> location.href="/index"; </script>'
+			# 		})
 
 		except Exception as e:
 			r['out2'] = f"Failed to parse selected file: {html.escape(str(e))}"
@@ -648,64 +650,6 @@ def main_index(request, subpath="",filterservice="", filterportid=""):
 
 	# CASE 2: A folder is selected
 	elif selected_folder and os.path.isdir(selected_folder):
-		
-		# for fname in os.listdir(selected_folder):
-		# 	if not (fname.endswith('.xml') or fname.endswith('.json')):
-		# 		continue
-			
-		# 	xmlfilescount += 1
-		# 	xml_path = os.path.join(selected_folder, fname)
-			
-		   
-		# 	try:
-			   
-			   
-		# 		oo = xmltodict.parse(open(xml_path, 'r').read())
-			  		
-		# 	except:
-		# 		r['tr'][fname] = {'filename':html.escape(fname), 'start': 0, 'startstr': 'Incomplete / Invalid', 'hostnum':0, 'href':'#!', 'portstats':{'po':0,'pc':0,'pf':0}}
-			   
-		# 		continue
-
-		# 	r['out2'] = json.dumps(oo['nmaprun'], indent=4)
-		# 	o = json.loads(r['out2'])
-
-		# 	if 'host' in o:
-		# 		if type(o['host']) is not dict:
-		# 			hostnum = str(len(o['host']))
-		# 		else:
-		# 			hostnum = '1'
-		# 	else:
-		# 		hostnum = '0'
-
-		# 	if hostnum != '0':
-		# 		viewhref = '/setscanpath/'+html.escape(fname)
-		# 	else:
-		# 		viewhref = '#!'
-
-		# 	filename = fname
-
-		# 	portstats = ports_stats(xml_path)
-			
-
-		# 	r['stats']['po'] = (r['stats']['po'] + portstats['po'])
-		# 	r['stats']['pc'] = (r['stats']['pc'] + portstats['pc'])
-		# 	r['stats']['pf'] = (r['stats']['pf'] + portstats['pf'])
-			
-
-		# 	r['tr'][o['@start']] = {
-		# 		'filename':filename,
-		# 		'start': o['@start'],
-		# 		'startstr': html.escape(o['@startstr']),
-		# 		'hostnum':hostnum,
-		# 		'href':viewhref,
-		# 		'portstats':portstats
-		# 	}
-
-		# r['tr'] = OrderedDict(sorted(r['tr'].items()))
-		# r['stats']['xmlcount'] = xmlfilescount
-
-		# return render(request, 'nmapreport/nmap_xmlfiles.html', r)
 		
 		return render(request, 'nmapreport/nmap_hostdetails.html', {
 								'js': '<script> location.href="/index"; </script>'
@@ -724,25 +668,39 @@ def main_index(request, subpath="",filterservice="", filterportid=""):
 			if os.path.isdir(full_entry_path):
 				# Initialize per-folder port stats
 				folder_portstats = {'po': 0, 'pc': 0, 'pf': 0}
+				folder_hostcount = 0
 
 				for fname in os.listdir(full_entry_path):
 					if fname.endswith('.xml'):
 						xml_path = os.path.join(full_entry_path, fname)
 						try:
+							with open(xml_path, 'r') as f:
+								oo = xmltodict.parse(f.read())
+								nmaprun = oo.get('nmaprun', {})
+								hosts = nmaprun.get('host', [])
+								if isinstance(hosts, list):
+									folder_hostcount += len(hosts)
+								elif isinstance(hosts, dict):
+									folder_hostcount += 1
+						
 							stats = ports_stats(xml_path)
 							folder_portstats['po'] += stats.get('po', 0)
 							folder_portstats['pc'] += stats.get('pc', 0)
 							folder_portstats['pf'] += stats.get('pf', 0)
 						except:
 							continue
-
+				if folder_hostcount > 0:
+					href = f'/setscanpath/{os.path.join(subpath, entry)}'  # allow selection
+				else:
+					href = f'/browse/{os.path.join(subpath, entry)}'  # only browse inside
+			
 				r['tr'][entry + "/"] = {
 					'filename': os.path.join(subpath, entry),
 					'is_folder': True,
 					'start': 0,
 					'startstr': strftime('%Y-%m-%d %H:%M:%S', localtime(os.stat(full_entry_path).st_ctime)),
-					'hostnum': 0,  # you can improve this later
-					'href': f'/setscanpath/{os.path.join(subpath, entry)}',
+					'hostnum': folder_hostcount,
+					'href': href,
 					'portstats': folder_portstats
 				}
 
@@ -808,6 +766,30 @@ def index(request, filterservice="", filterportid=""):
 		oo = xmltodict.parse(open('/opt/xml/'+request.session['scanfile'], 'r').read())
 		r['out2'] = json.dumps(oo['nmaprun'], indent=4)
 		o = json.loads(r['out2'])
+		meta = {
+			'startstr': oo['nmaprun'].get('@startstr', 'Unknown'),
+			'version': oo['nmaprun'].get('@version', 'Unknown'),
+			'args': oo['nmaprun'].get('@args', ''),
+			'xmlver': oo['nmaprun'].get('@xmloutputversion', ''),
+			'scantype': '',
+			'protocol': ''
+		}
+
+		scaninfo = oo['nmaprun'].get('scaninfo')
+		if isinstance(scaninfo, dict):
+			meta['scantype'] = scaninfo.get('@type', '')
+			meta['protocol'] = scaninfo.get('@protocol', '')
+		elif isinstance(scaninfo, list):
+			meta['scantype'] = ', '.join(s.get('@type', '') for s in scaninfo)
+			meta['protocol'] = ', '.join(s.get('@protocol', '') for s in scaninfo)
+
+		# Repeat meta for each host
+		hosts = o.get('host', [])
+		if isinstance(hosts, dict):
+			hosts = [hosts]
+		o['host'] = hosts
+		o['_metadata_per_host'] = [meta] * len(hosts)
+
 		scanmd5 = hashlib.md5(str(request.session['scanfile']).encode('utf-8')).hexdigest()
 		r['scanfile'] = html.escape(str(request.session['scanfile']))
 		r['scanmd5'] = scanmd5
@@ -815,19 +797,44 @@ def index(request, filterservice="", filterportid=""):
 	elif 'scanfolder' in request.session:
 		folder_path = os.path.join('/opt/xml', request.session['scanfolder'])
 		host_list = []
+		metadata_per_host = []
+
 		for filename in os.listdir(folder_path):
 			if filename.endswith('.xml'):
-				with open(os.path.join(folder_path, filename), 'r') as f:
+				full_path = os.path.join(folder_path, filename)
+				with open(full_path, 'r') as f:
 					oo = xmltodict.parse(f.read())
-					json_data = json.loads(json.dumps(oo['nmaprun']))
-					if isinstance(json_data['host'], list):
-						host_list.extend(json_data['host'])
-					else:
-						host_list.append(json_data['host'])
-		
-		o = {'host': host_list}
+					nmaprun = oo['nmaprun']
+
+					meta = {
+						'startstr': nmaprun.get('@startstr', 'Unknown'),
+						'version': nmaprun.get('@version', 'Unknown'),
+						'args': nmaprun.get('@args', 'Unknown'),
+						'xmlver': nmaprun.get('@xmloutputversion', 'Unknown'),
+						'scantype': '',
+						'protocol': ''
+					}
+
+					if 'scaninfo' in nmaprun:
+						if isinstance(nmaprun['scaninfo'], dict):
+							meta['scantype'] = nmaprun['scaninfo'].get('@type', '')
+							meta['protocol'] = nmaprun['scaninfo'].get('@protocol', '')
+						elif isinstance(nmaprun['scaninfo'], list):
+							meta['scantype'] = ', '.join(si.get('@type', '') for si in nmaprun['scaninfo'])
+							meta['protocol'] = ', '.join(si.get('@protocol', '') for si in nmaprun['scaninfo'])
+
+					hosts = nmaprun.get('host', [])
+					if isinstance(hosts, dict):
+						hosts = [hosts]
+					for h in hosts:
+						host_list.append(h)
+						metadata_per_host.append(meta)
+
+		o = {'host': host_list, '_metadata_per_host': metadata_per_host}
 		scanmd5 = hashlib.md5(request.session['scanfolder'].encode('utf-8')).hexdigest()
 		r['scanfile'] = html.escape(str(request.session['scanfolder']))
+		r['scanmd5'] = scanmd5
+
 		
 
 	# scanmd5 = hashlib.md5(str(request.session['scanfile']).encode('utf-8')).hexdigest()
@@ -835,6 +842,22 @@ def index(request, filterservice="", filterportid=""):
 	# r['scanmd5'] = scanmd5
 
 	# collect all labels in labelhost dict
+	collector_info = {}
+	try:
+		with open('/opt/xml/collectorout.json', 'r') as f:
+			collector_data = json.load(f)
+			for entry in collector_data:
+				collector_info[entry['ip']] = {
+					'ftp_anonymous': entry.get('ftp_anonymous', False),
+					'telnet_guest': entry.get('telnet_guest', False)
+				}
+			print(collector_info)	
+	except Exception as e:
+		print(f"Warning: could not load collector info: {e}")
+
+
+	
+
 	labelhost = {}
 	labelfiles = os.listdir('/opt/notes')
 	for lf in labelfiles:
@@ -866,13 +889,27 @@ def index(request, filterservice="", filterportid=""):
 	r['tr'] = {}
 	r['stats'] = {}
 
-	for ik in o['host']:
+	for meta_index, ik in enumerate(o['host']):
+		i = ik if isinstance(ik, dict) else o['host']
+		metadata_list = o.get('_metadata_per_host')
+		if metadata_list and meta_index < len(metadata_list):
+			host_meta = metadata_list[meta_index]
+		else:
+			host_meta = {
+				'startstr': 'Unknown',
+				'version': '',
+				'args': '',
+				'xmlver': '',
+				'scantype': '',
+				'protocol': ''
+			}
+
 
 		# this fix single host report
-		if type(ik) is dict:
-			i = ik
-		else:
-			i = o['host']
+		# if type(ik) is dict:
+		# 	i = ik
+		# else:
+		# 	i = o['host']
 
 		hostname = ''
 		if 'hostnames' in i and type(i['hostnames']) is dict:
@@ -1076,8 +1113,21 @@ def index(request, filterservice="", filterportid=""):
 					'notesb64': notesb64,
 					'notesout': notesout,
 					'cveout': cveout,
-					'cvecount': cvecount
+					'cvecount': cvecount,
+					'startstr': host_meta.get('startstr', 'Unknown'),
+					'nmapver': host_meta.get('version', ''),
+					'nmapargs': host_meta.get('args', ''),
+					'xmlver': host_meta.get('xmlver', ''),
+					'scantype': host_meta.get('scantype', ''),
+					'protocol': host_meta.get('protocol', ''),
+					
 				}
+				if address in collector_info:
+					r['tr'][address]['ftp_anonymous'] = collector_info[address]['ftp_anonymous']
+					r['tr'][address]['telnet_guest'] = collector_info[address]['telnet_guest']
+				else:
+					r['tr'][address]['ftp_anonymous'] = False
+					r['tr'][address]['telnet_guest'] = False
 
 				hostindex = (hostindex + 1)
 
@@ -1126,18 +1176,18 @@ def index(request, filterservice="", filterportid=""):
 	r['stats'] = {
 		'scaninfobox2': scaninfobox2,
 		'scaninfobox3': scaninfobox3,
-		'startstr': o['@startstr'],
+		# 'startstr': o['@startstr'],
 		'scantype': scantype,
 		'protocol': protocol,
-		'nmapver': o['@version'],
-		'nmapargs': o['@args'],
-		'xmlver': o['@xmloutputversion'],
+		# 'nmapver': o['@version'],
+		# 'nmapargs': o['@args'],
+		# 'xmlver': o['@xmloutputversion'],
 		'hostsup': str(hostsup),
 		'popen': ports['open'],
 		'pclosed': ports['closed'],
 		'pfiltered': ports['filtered']
 	}
-
+	
 	allss = ''
 	allsslabels = ''
 	allssdata = ''
