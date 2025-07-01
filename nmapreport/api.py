@@ -4,74 +4,125 @@ import xmltodict, json, html, os, hashlib, re, requests, base64, urllib.parse,su
 from collections import OrderedDict
 from nmapreport.functions import *
 
+
+def get_scan_context_md5(request):
+   
+   
+    scanfile = request.session.get('scanfile')
+    scanfolder = request.session.get('scanfolder')
+
+    if scanfile:
+        return hashlib.md5(scanfile.encode('utf-8')).hexdigest()
+    elif scanfolder:
+        return hashlib.md5(scanfolder.encode('utf-8')).hexdigest()
+    else:
+        return 'unknown'
+
 def rmNotes(request, hashstr):
-	if 'auth' not in request.session:
-		return False
+    if 'auth' not in request.session:
+        return HttpResponse(json.dumps({'error': 'unauthorized'}), content_type="application/json")
 
-	scanfilemd5 = hashlib.md5(str(request.session['scanfile']).encode('utf-8')).hexdigest()
-	if re.match('^[a-f0-9]{32,32}$', hashstr) is not None:
-		os.remove('/opt/notes/'+scanfilemd5+'_'+hashstr+'.notes')
-		res = {'ok':'notes removed'}
-	else:
-		res = {'error':'invalid format'}
+    scanfilemd5 = get_scan_context_md5(request)
 
-	return HttpResponse(json.dumps(res), content_type="application/json")
+    if re.match(r'^[a-f0-9]{32}$', hashstr):
+        notes_path = f'/opt/notes/{scanfilemd5}_{hashstr}.notes'
+        if os.path.exists(notes_path):
+            os.remove(notes_path)
+            res = {'ok': 'notes removed'}
+        else:
+            res = {'error': 'note not found'}
+    else:
+        res = {'error': 'invalid format'}
+
+    return HttpResponse(json.dumps(res), content_type="application/json")
 
 def saveNotes(request):
-	if 'auth' not in request.session:
-		return False
+    if 'auth' not in request.session:
+        return HttpResponse(json.dumps({'error': 'unauthorized'}), content_type="application/json")
 
-	if request.method == "POST":
-		scanfilemd5 = hashlib.md5(str(request.session['scanfile']).encode('utf-8')).hexdigest()
+    if request.method == "POST":
+        scanfilemd5 = get_scan_context_md5(request)
+        hashstr = request.POST.get('hashstr', '')
 
-		if re.match('^[a-f0-9]{32,32}$', request.POST['hashstr']) is not None:
-			f = open('/opt/notes/'+scanfilemd5+'_'+request.POST['hashstr']+'.notes', 'w')
-			f.write(request.POST['notes'])
-			f.close()
-			res = {'ok':'notes saved'}
-	else:
-		res = {'error': request.method }
+        if re.match(r'^[a-f0-9]{32}$', hashstr):
+            notes_dir = '/opt/notes'
+            notes_path = f'{notes_dir}/{scanfilemd5}_{hashstr}.notes'
 
-	return HttpResponse(json.dumps(res), content_type="application/json")
+            os.makedirs(notes_dir, exist_ok=True)  # ensure directory exists
+
+            try:
+                with open(notes_path, 'w') as f:
+                    f.write(request.POST.get('notes', ''))
+                res = {'ok': 'notes saved'}
+            except Exception as e:
+                res = {'error': f'failed to save notes: {str(e)}'}
+        else:
+            res = {'error': 'invalid hash format'}
+    else:
+        res = {'error': f'invalid method: {request.method}'}
+
+    return HttpResponse(json.dumps(res), content_type="application/json")
+
 
 def rmlabel(request, objtype, hashstr):
-	if 'auth' not in request.session:
-		return False
+    if 'auth' not in request.session:
+        return HttpResponse(json.dumps({'error': 'unauthorized'}), content_type="application/json")
 
-	types = {
-		'host':True,
-		'port':True
-	}
+    types = {
+        'host': True,
+        'port': True
+    }
 
-	scanfilemd5 = hashlib.md5(str(request.session['scanfile']).encode('utf-8')).hexdigest()
+    if objtype not in types:
+        return HttpResponse(json.dumps({'error': 'invalid object type'}), content_type="application/json")
 
-	if re.match('^[a-f0-9]{32,32}$', hashstr) is not None:
-		os.remove('/opt/notes/'+scanfilemd5+'_'+hashstr+'.'+objtype+'.label')
-		res = {'ok':'label removed'}
-		return HttpResponse(json.dumps(res), content_type="application/json")
+    if not re.match(r'^[a-f0-9]{32}$', hashstr):
+        return HttpResponse(json.dumps({'error': 'invalid hash format'}), content_type="application/json")
+
+    scanfilemd5 = get_scan_context_md5(request)
+    label_path = f'/opt/notes/{scanfilemd5}_{hashstr}.{objtype}.label'
+
+    if os.path.exists(label_path):
+        os.remove(label_path)
+        res = {'ok': 'label removed'}
+    else:
+        res = {'error': 'label not found'}
+
+    return HttpResponse(json.dumps(res), content_type="application/json")
 
 def label(request, objtype, label, hashstr):
-	labels = {
-		'Vulnerable':True,
-		'Critical':True,
-		'Warning':True,
-		'Checked':True
-	}
+    labels = {
+        'Vulnerable': True,
+        'Critical': True,
+        'Warning': True,
+        'Checked': True
+    }
 
-	types = {
-		'host':True,
-		'port':True
-	}
+    types = {
+        'host': True,
+        'port': True
+    }
 
-	scanfilemd5 = hashlib.md5(str(request.session['scanfile']).encode('utf-8')).hexdigest()
+    if label not in labels or objtype not in types:
+        return HttpResponse(json.dumps({'error': 'invalid label or object type'}), content_type="application/json")
 
-	if label in labels and objtype in types:
-		if re.match('^[a-f0-9]{32,32}$', hashstr) is not None:
-			f = open('/opt/notes/'+scanfilemd5+'_'+hashstr+'.'+objtype+'.label', 'w')
-			f.write(label)
-			f.close()
-			res = {'ok':'label set', 'label':str(label)}
-			return HttpResponse(json.dumps(res), content_type="application/json")
+    if not re.match(r'^[a-f0-9]{32}$', hashstr):
+        return HttpResponse(json.dumps({'error': 'invalid hash format'}), content_type="application/json")
+
+    scanfilemd5 = get_scan_context_md5(request)
+    label_dir = '/opt/notes'
+    label_path = f'{label_dir}/{scanfilemd5}_{hashstr}.{objtype}.label'
+
+    os.makedirs(label_dir, exist_ok=True)
+
+    try:
+        with open(label_path, 'w') as f:
+            f.write(label)
+        res = {'ok': 'label set', 'label': label}
+    except Exception as e:
+        res = {'error': f'failed to save label: {str(e)}'}
+
+    return HttpResponse(json.dumps(res), content_type="application/json")
 
 def port_details(request, address, portid):
 	r = {}
@@ -187,8 +238,7 @@ def getCVE(request):
 	# 	return HttpResponse(json.dumps(res), content_type="application/json")
 
 def apiv1_hostdetails(request, scanfile, faddress=""):
-	if token_check(request.GET['token']) is not True:
-		return HttpResponse(json.dumps({'error':'invalid token'}, indent=4), content_type="application/json")
+	
 
 	oo = xmltodict.parse(open('/opt/xml/'+scanfile, 'r').read())
 	out2 = json.dumps(oo['nmaprun'], indent=4)

@@ -3,6 +3,7 @@ from django.http import HttpResponse , Http404
 import xmltodict, json, html, os, hashlib, re, urllib.parse, base64
 from collections import OrderedDict
 from nmapreport.functions import *
+from nmapreport.api import *
 from django.conf import settings
 from pathlib import Path
 from time import strftime, localtime
@@ -287,36 +288,125 @@ def details(request, address):
 	else:
 		r['auth'] = True
 
-	oo = xmltodict.parse(open('/opt/xml/'+request.session['scanfile'], 'r').read())
-	r['out2'] = json.dumps(oo['nmaprun'], indent=4)
-	o = json.loads(r['out2'])
+	# oo = xmltodict.parse(open('/opt/xml/'+request.session['scanfile'], 'r').read())
+	# r['out2'] = json.dumps(oo['nmaprun'], indent=4)
+	# o = json.loads(r['out2'])
+	host_found = None
+	nmaprun_source = None
 
+	if 'scanfolder' in request.session:
+		folder_path = request.session['scanfolder']
+
+		for fname in os.listdir(folder_path):
+			if not fname.endswith('.xml'):
+				continue
+
+			xml_path = os.path.join(folder_path, fname)
+			try:
+				with open(xml_path, 'r') as f:
+					oo = xmltodict.parse(f.read())
+					o = json.loads(json.dumps(oo.get('nmaprun', {})))
+
+				hosts = o.get('host', [])
+				if isinstance(hosts, dict):  # single host
+					hosts = [hosts]
+
+				for host in hosts:
+					addr_block = host.get('address', {})
+					saddr = ''
+
+					if isinstance(addr_block, dict):
+						saddr = addr_block.get('@addr', '')
+					elif isinstance(addr_block, list):
+						for a in addr_block:
+							if a.get('@addrtype') == 'ipv4':
+								saddr = a.get('@addr')
+								break
+
+					if saddr == address:
+						host_found = host
+						nmaprun_source = {
+							'nmaprun': o,
+							'scanfile': fname  # local use only
+						}
+						break
+
+				if host_found:
+					break
+
+			except Exception as e:
+				print(f"[!] Failed to parse {xml_path}: {e}")
+				continue
+
+		if not host_found:
+			return render(request, 'nmapreport/nmap_portdetails.html', {'error': 'Address not found'})
+
+		o = nmaprun_source['nmaprun']
+		scanfile = nmaprun_source['scanfile']  # DO NOT set this in session
+
+	else:
+		scanfile = request.session['scanfile']  # single file mode
+		with open(f'/opt/xml/{scanfile}', 'r') as f:
+			oo = xmltodict.parse(f.read())
+		r['out2'] = json.dumps(oo['nmaprun'], indent=4)
+		o = json.loads(r['out2'])
+
+	# Compute hashes
+	scanmd5 = hashlib.md5(scanfile.encode('utf-8')).hexdigest()
+	addressmd5 = hashlib.md5(address.encode('utf-8')).hexdigest()
 	r['trhost'] = ''
 	v,e,z,h = '','','',''
 	pc,po,pf=0,0,0
 
-	scanmd5 = hashlib.md5(str(request.session['scanfile']).encode('utf-8')).hexdigest()
-	addressmd5 = hashlib.md5(str(address).encode('utf-8')).hexdigest()
+	# scanmd5 = hashlib.md5(str(request.session['scanfile']).encode('utf-8')).hexdigest()
+	# addressmd5 = hashlib.md5(str(address).encode('utf-8')).hexdigest()
 
 	# collect all labels in labelhost dict
-	labelhost = {}
-	labelfiles = os.listdir('/opt/notes')
-	for lf in labelfiles:
-		m = re.match('^('+scanmd5+')_([a-z0-9]{32,32})\.host\.label$', lf)
-		if m is not None:
-			if m.group(1) not in labelhost:
-				labelhost[m.group(1)] = {}
-			labelhost[m.group(1)][m.group(2)] = open('/opt/notes/'+lf, 'r').read()
+	# labelhost = {}
+	# labelfiles = os.listdir('/opt/notes')
+	# for lf in labelfiles:
+	# 	m = re.match('^('+scanmd5+')_([a-z0-9]{32,32})\.host\.label$', lf)
+	# 	if m is not None:
+	# 		if m.group(1) not in labelhost:
+	# 			labelhost[m.group(1)] = {}
+	# 		labelhost[m.group(1)][m.group(2)] = open('/opt/notes/'+lf, 'r').read()
 
-	# collect all notes in noteshost dict
+	# # collect all notes in noteshost dict
+	# noteshost = {}
+	# notesfiles = os.listdir('/opt/notes')
+	# for nf in notesfiles:
+	# 	m = re.match('^('+scanmd5+')_([a-z0-9]{32,32})\.notes$', nf)
+	# 	if m is not None:
+	# 		if m.group(1) not in noteshost:
+	# 			noteshost[m.group(1)] = {}
+	# 		noteshost[m.group(1)][m.group(2)] = open('/opt/notes/'+nf, 'r').read()
+
+	scanmd5 = get_scan_context_md5(request)
+
+	labelhost = {}
 	noteshost = {}
-	notesfiles = os.listdir('/opt/notes')
-	for nf in notesfiles:
-		m = re.match('^('+scanmd5+')_([a-z0-9]{32,32})\.notes$', nf)
-		if m is not None:
-			if m.group(1) not in noteshost:
-				noteshost[m.group(1)] = {}
-			noteshost[m.group(1)][m.group(2)] = open('/opt/notes/'+nf, 'r').read()
+
+	try:
+		notefiles = os.listdir('/opt/notes')
+	except FileNotFoundError:
+		notefiles = []
+
+	for fname in notefiles:
+		# Match label files
+		m_label = re.match(r'^(' + re.escape(scanmd5) + r')_([a-f0-9]{32})\.host\.label$', fname)
+		if m_label:
+			_, hashstr = m_label.groups()
+			labelhost.setdefault(scanmd5, {})
+			with open(f'/opt/notes/{fname}', 'r') as f:
+				labelhost[scanmd5][hashstr] = f.read()
+
+		# Match note files
+		m_note = re.match(r'^(' + re.escape(scanmd5) + r')_([a-f0-9]{32})\.notes$', fname)
+		if m_note:
+			_, hashstr = m_note.groups()
+			noteshost.setdefault(scanmd5, {})
+			with open(f'/opt/notes/{fname}', 'r') as f:
+				noteshost[scanmd5][hashstr] = f.read()
 
 	# collect all cve in cvehost dict
 	cvehost = get_cve(scanmd5)
@@ -354,12 +444,11 @@ def details(request, address):
 
 			r['address'] = html.escape(str(saddress))
 			r['hostname'] = hostname
-
-			scantitle = request.session['scanfile'].replace('.xml','').replace('_',' ')
-			if re.search('^webmapsched\_[0-9\.]+', request.session['scanfile']):
-				m = re.search('^webmapsched\_[0-9\.]+\_(.+)', request.session['scanfile'])
-				scantitle = m.group(1).replace('.xml','').replace('_',' ')
+			
+			scantitle = scanfile.replace('.xml', '').replace('_', ' ')
+			
 			r['scanfile'] = scantitle
+
 
 
 			labelout = '<span id="hostlabel"></span>'
@@ -556,7 +645,7 @@ def details(request, address):
 
 	r['js'] = '<script> '+\
 	'$(document).ready(function() { '+\
-	'	$("#scantitle").html("'+html.escape(request.session['scanfile'])+'");'+\
+	'	$("#scantitle").html("'+html.escape(scanfile)+'");'+\
 	'	var clipboard = new ClipboardJS(".btncpy"); '+\
 	'	clipboard.on("success", function(e) { '+\
 	'		M.toast({html: "Copied to clipboard"}); '+\
@@ -706,7 +795,7 @@ def main_index(request, subpath="",filterservice="", filterportid=""):
 
 		# for files
 		for fname in os.listdir(rpath): 
-			if not (fname.endswith('.xml') or fname.endswith('.json')):
+			if not fname.endswith('.xml') :
 				continue
 
 			xmlfilescount += 1
@@ -851,7 +940,7 @@ def index(request, filterservice="", filterportid=""):
 					'ftp_anonymous': entry.get('ftp_anonymous', False),
 					'telnet_guest': entry.get('telnet_guest', False)
 				}
-			print(collector_info)	
+			
 	except Exception as e:
 		print(f"Warning: could not load collector info: {e}")
 
