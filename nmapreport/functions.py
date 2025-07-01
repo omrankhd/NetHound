@@ -190,6 +190,7 @@ def get_cve(scanmd5):
 			#cvehost[m.group(1)][m.group(2)][m.group(3)] = open('/opt/notes/'+cf, 'r').read()
 
 	return cvehost
+	
 
 def get_ports_details(scanfile):
 	faddress = ""
@@ -328,3 +329,45 @@ def get_ports_details(scanfile):
 						'extrainfo': e
 					})
 	return r
+def find_json_upward(start_path, stop_path="/opt/xml"):
+		current_path = os.path.abspath(start_path)
+		stop_path = os.path.abspath(stop_path)
+
+		while True:
+			for fname in os.listdir(current_path):
+				if (fname.startswith("CVE_") & fname.endswith('.json')):
+					return os.path.join(current_path, fname)
+
+			if current_path == stop_path:
+				break  # Reached the top-level search limit
+
+			parent = os.path.dirname(current_path)
+			if parent == current_path:
+				break  # Prevent infinite loop if something goes wrong
+
+			current_path = parent
+
+		return None
+def load_collector_info(start_path):
+	collector_info = {}
+
+	json_path = find_json_upward(start_path)
+	if not json_path:
+		print("Warning: collector JSON not found.")
+		return collector_info
+	
+	try:
+		with open(json_path, 'r') as f:
+			collector_data = json.load(f)
+			for entry in collector_data:
+				if isinstance(entry, dict) and 'ip' in entry:
+					collector_info[entry['ip']] = {
+						'ftp_anonymous': entry.get('ftp_anonymous', False),
+						'telnet_guest': entry.get('telnet_guest', False)
+					}
+				else:
+					print(f"Skipping invalid entry in {json_path}: {entry}")
+	except Exception as e:
+		print(f"Warning: could not load collector info from {json_path}: {e}")
+
+	return collector_info

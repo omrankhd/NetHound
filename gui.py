@@ -11,10 +11,10 @@ def run_script():
     output_dir = output_dir_entry.get().strip()
     cve_output_name= cve_output_name_entry.get().strip()
     if  cve_output_name=="":
-        cve_output_name="cve_output.json"
+        cve_output_name="output.json"
     if not cve_output_name.endswith('.json'):
         cve_output_name+='.json'
-    cve_output = output_dir +"/"+cve_output_name
+    cve_output = output_dir +"/"+"CVE_"+cve_output_name
     print(cve_output)
     # Collect selected options into a single quoted string
     selected_options = []
@@ -24,8 +24,11 @@ def run_script():
         selected_options.append("-A")
     if O_var.get():
         selected_options.append("-O")
-    options_str = " ".join(f'"{selected_options}"')
-
+    print(selected_options)
+    # options_str = " ".join(f'"{selected_options}"')
+    options_str = " ".join(f"'{opt}'" for opt in selected_options)
+    # options_str =str(options_str2)
+    print(options_str)
     concurrency = concurrency_entry.get()
     timeout = timeout_entry.get()
     ports = ports_entry.get().strip()
@@ -54,8 +57,8 @@ def run_script():
 
 
     # Debug: print the command
-    print("Running command:", " ".join(cmd))
-
+    # print("Running command:", " ".join(cmd))
+    print (cmd)
     result = subprocess.run(cmd)
 
     if result.returncode == 0:

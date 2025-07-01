@@ -116,9 +116,7 @@ async def check_services(hosts):
             "services": enriched_services
         })
 
-    return {
-        "cvecollector": results
-    }
+    return results
 
 from pathlib import Path
 

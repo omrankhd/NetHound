@@ -122,13 +122,13 @@
 							<b class="orange-text">Nmap Command:</b> {{ v.nmapargs }}<br>
 							<b class="orange-text">Nmap version:</b> {{ v.nmapver }}<br>
 							<b class="orange-text">XML version:</b> {{ v.xmlver }}<br>
-							<b class="orange-text">Nmap version:</b> {% if v.ftp_anonymous %}
+							<b class="orange-text">FTP Anonymous:</b> {% if v.ftp_anonymous %}
 							<span class="green-text">True</span>
 						  		{% else %}
 									<span class="red-text">False</span>
 						 		{% endif %}<br>
 						
-						    <b class="orange-text">XML version:</b> {% if v.ftp_anonymous %}
+						    <b class="orange-text">Telnet Guest:</b> {% if v.telnet_guest %}
 						    <span class="green-text">True</span>
 								{% else %}
 						  <span class="red-text">False</span>

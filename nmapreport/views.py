@@ -699,17 +699,20 @@ def main_index(request, subpath="",filterservice="", filterportid=""):
 	xmlfilescount = 0
 	jsonfilescount = 0
 	data = [] 
+	collector_info = {}
 	# CASE 1: A specific file is selected
 	if selected_file:
 		try:
 			if selected_file.endswith('.xml'):
 					print("seletedfile")
 					xml_path = os.path.join(xml_base, selected_file)
+					
 					print(xml_path)
 					# with open(xml_path, 'r') as f:
 					# 	oo = xmltodict.parse(f.read())
 					# r['out2'] = json.dumps(oo['nmaprun'], indent=4)
 					# print("if",r['out2'])
+
 					return render(request, 'nmapreport/nmap_hostdetails.html', {
 								'js': '<script> location.href="/index"; </script>'
 					})
@@ -929,24 +932,39 @@ def index(request, filterservice="", filterportid=""):
 	# scanmd5 = hashlib.md5(str(request.session['scanfile']).encode('utf-8')).hexdigest()
 	# r['scanfile'] = html.escape(str(request.session['scanfile']))
 	# r['scanmd5'] = scanmd5
-
-	# collect all labels in labelhost dict
-	collector_info = {}
-	try:
-		with open('/opt/xml/collectorout.json', 'r') as f:
-			collector_data = json.load(f)
-			for entry in collector_data:
-				collector_info[entry['ip']] = {
-					'ftp_anonymous': entry.get('ftp_anonymous', False),
-					'telnet_guest': entry.get('telnet_guest', False)
-				}
-			
-	except Exception as e:
-		print(f"Warning: could not load collector info: {e}")
-
-
 	
 
+	# collector_info = {}
+	# try:
+	# 	with open('/opt/xml/collectorout.json', 'r') as f:
+	# 		collector_data = json.load(f)
+	# 		for entry in collector_data:
+	# 			collector_info[entry['ip']] = {
+	# 				'ftp_anonymous': entry.get('ftp_anonymous', False),
+	# 				'telnet_guest': entry.get('telnet_guest', False)
+	# 			}
+			
+	# except Exception as e:
+	# 	print(f"Warning: could not load collector info: {e}")
+	xml_base = "/opt/xml"
+	selected_file = request.session.get("scanfile")
+	selected_folder = request.session.get("scanfolder")
+
+	if selected_file:
+		start_path = os.path.join(xml_base, selected_file)
+		if os.path.isfile(start_path):
+			search_start = os.path.dirname(start_path)
+		else:
+			search_start = start_path
+	elif selected_folder:
+		search_start = os.path.join(xml_base, selected_folder)
+	else:
+		search_start = xml_base
+
+	collector_info = load_collector_info(search_start)
+		
+	
+	
 	labelhost = {}
 	labelfiles = os.listdir('/opt/notes')
 	for lf in labelfiles:

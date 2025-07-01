@@ -5,12 +5,12 @@
   <h4 class="blue-text">📂 Projects</h4>
 
   {% if path %}
-    <div class="card-panel light-blue lighten-5">
+    <div class="card-panel grey darken-3 white-text">
       <strong>Current path:</strong>
       <code>{{ path }}</code>
       {% if parent_path %}
-      <a href="{% url 'browse' parent_path %}" class="btn-flat right">
-        <i class="fas fa-level-up-alt"></i> Back
+      <a href="{% url 'browse' parent_path %}" class="btn-flat right white-text">
+        <i class="fas fa-level-up-alt"></i> <b>Back</b>
       </a>
     {% endif %}
     
