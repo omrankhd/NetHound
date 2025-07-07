@@ -42,27 +42,102 @@ def parse_nmap_xml(xml_file):
     return results
 
 def check_ftp(ip, port, timeout=5):
-    try:
-        ftp = ftplib.FTP()
-        ftp.connect(ip, port, timeout=timeout)
-        ftp.login()
-        ftp.quit()
-        return True
-    except Exception:
-        return False
+    default_creds = [
+        ("anonymous", "anonymous@"),
+        ("admin", "admin"),
+        ("admin", "password"),
+        ("root", "root"),
+        ("user", "user"),
+        ("ftp", "ftp"),
+        ("", ""),
+        # Cisco
+        ("cisco", "cisco"),
+        ("admin", "cisco"),
+        ("cisco", "admin"),
+        # D-Link
+        ("admin", ""),
+        ("admin", "admin"),
+        # Zyxel
+        ("admin", "1234"),
+        # Huawei
+        ("admin", "admin"),
+        ("root", "admin"),
+        # Netgear
+        ("admin", "password"),
+    ]
+    for username, password in default_creds:
+        try:
+            ftp = ftplib.FTP()
+            ftp.connect(ip, port, timeout=timeout)
+            ftp.login(user=username, passwd=password)
+            ftp.quit()
+            return (username, password)
+        except Exception:
+            continue
+    return None
 
 async def check_telnet(ip, port, timeout=5):
+    default_creds = [
+        # Generic
+        ("admin", "admin"),
+        ("root", "root"),
+        ("admin", "password"),
+        ("user", "user"),
+        ("guest", "guest"),
+        ("root", "admin"),
+        ("root", "password"),
+        ("admin", ""),  # admin with blank password
+        ("", "admin"),   # blank username, admin password
+        # Cisco
+        ("cisco", "cisco"),
+        ("admin", "cisco"),
+        ("cisco", "admin"),
+        # Juniper
+        ("root", "Juniper"),
+        ("root", "Juniper123"),
+        # MikroTik
+        ("admin", ""),
+        ("admin", "admin"),
+        # D-Link
+        ("admin", ""),
+        ("admin", "admin"),
+        # Zyxel
+        ("admin", "1234"),
+        # Huawei
+        ("admin", "admin"),
+        ("root", "admin"),
+        # Netgear
+        ("admin", "password"),
+    ]
     try:
         reader, writer = await asyncio.wait_for(
             asyncio.open_connection(ip, port), timeout=timeout
         )
-        writer.write(b"\n")
-        await writer.drain()
+        for username, password in default_creds:
+            try:
+                # Wait for login prompt
+                data = await asyncio.wait_for(reader.readuntil(b":"), timeout=2)
+                writer.write((username + "\n").encode())
+                await writer.drain()
+                # Wait for password prompt
+                data = await asyncio.wait_for(reader.readuntil(b":"), timeout=2)
+                writer.write((password + "\n").encode())
+                await writer.drain()
+                # Read response after login attempt
+                data = await asyncio.wait_for(reader.read(1024), timeout=2)
+                if b"Last login" in data or b"#" in data or b"$" in data or b"Welcome" in data:
+                    writer.close()
+                    await writer.wait_closed()
+                    return (username, password)
+            except Exception:
+                continue
         writer.close()
         await writer.wait_closed()
-        return True
+        return None
     except Exception:
-        return False
+        return None
+def check_Dns(ip, port, timeout=5):
+    return None
 
 def query_vulners(product, version):
     if not product or not version:

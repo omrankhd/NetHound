@@ -3,12 +3,13 @@ import sys
 
 def merge_nmap_xml(files, output_file):
     first = True
+    combined_root = None  # Initialize combined_root
     for file in files:
         tree = ET.parse(file)
         root = tree.getroot()
 
         if first:
-            combined_root = root
+            combined_root = root  # Correctly assign root to combined_root
             first = False
         else:
             for host in root.findall('host'):

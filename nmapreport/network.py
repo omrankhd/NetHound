@@ -179,10 +179,11 @@ def visjs(request):
 
 					service = p.get('service', {})
 					if isinstance(service, dict):
+						service_nmae = service.get('@name', 'unknown')
 						product = service.get('@product', 'No Product')
 						version = service.get('@version', 'No Version')
 						extrainfo = service.get('@extrainfo', '')
-						label = f"{product} / {version}\\n{extrainfo}"
+						label = f"{service_nmae} / {product} / {version}\\n{extrainfo}"
 						servicenode_id = f"product{addressmd5}{portid}"
 						addnodes += f"addNode('{servicenode_id}', '\\n{label}', '\\uf27a', '#666', '#999');\n"
 						addnodes += f"edges.add({{ id: 'edgeproduct{addressmd5}{portid}', from: '{portnode_id}', to: '{servicenode_id}', color:{{color: '#cccccc'}} }});\n"

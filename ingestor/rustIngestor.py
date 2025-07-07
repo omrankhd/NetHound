@@ -83,8 +83,7 @@ async def parse_and_save(xml_file: str, json_file: str):
         await f.write(json.dumps(result, indent=4))
     print(f"[✓] Saved JSON: {json_file}")
 
-async def scan_target(target: str, options: list, output_dir: str, timeout: int, sem: asyncio.Semaphore, top_ports: bool = False, ports: str = None):
-    async with sem:
+async def scan_target(target: str, options: list, output_dir: str, timeout: int, top_ports: bool = False, ports: str = None):
         xml_template = await run_rustscan(target, options, output_dir, timeout, top_ports, ports)
         if not xml_template:
             return
@@ -106,9 +105,8 @@ async def scan_target(target: str, options: list, output_dir: str, timeout: int,
 
 async def main(targets, options, output_dir, concurrency, timeout, top_ports, ports):
     os.makedirs(output_dir, exist_ok=True)
-    sem = asyncio.Semaphore(concurrency)
-    tasks = [scan_target(t, options, output_dir, timeout, sem, top_ports, ports) for t in targets]
-    await asyncio.gather(*tasks)
+    for target in targets:
+        await scan_target(target, options, output_dir, timeout, top_ports, ports)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Native RustScan Ingestor with Optimized Batch Settings")
