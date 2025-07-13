@@ -7,6 +7,7 @@ import os
 import aiofiles
 import sys
 from ipaddress import ip_network
+import re
 
 async def run_rustscan(target: str, options: list, output_dir: str, timeout: int = 0, top_ports: bool = False, ports: str = None):
     print(f"[+] Scanning {target} with RustScan, timeout = {'unlimited' if timeout == 0 else f'{timeout}s'}")
@@ -103,7 +104,21 @@ async def scan_target(target: str, options: list, output_dir: str, timeout: int,
                 json_file = ip_path.replace(".xml", ".json")
                 await parse_and_save(ip_path, json_file)
 
-async def main(targets, options, output_dir, concurrency, timeout, top_ports, ports):
+def discover_live_hosts_nmap(targets):
+    live_hosts = set()
+    for target in targets:
+        print(f"[+] Running Nmap host discovery on {target}")
+        try:
+            result = subprocess.run(["nmap", "-sn", target], capture_output=True, text=True, check=True)
+            found = re.findall(r"Nmap scan report for ([\d\.]+)", result.stdout)
+            print(f"[+] Found {len(found)} live hosts in {target}")
+            live_hosts.update(found)
+        except subprocess.CalledProcessError as e:
+            print(f"[-] Error scanning {target}: {e}")
+    return list(live_hosts)
+
+
+async def main(targets, options, output_dir,timeout, top_ports, ports):
     os.makedirs(output_dir, exist_ok=True)
     for target in targets:
         await scan_target(target, options, output_dir, timeout, top_ports, ports)
@@ -113,10 +128,10 @@ if __name__ == "__main__":
     parser.add_argument("targets", nargs="+", help="List of target IPs or CIDRs")
     parser.add_argument("-o", "--output-dir", default="rustscan_results", help="Directory to store output JSON files")
     parser.add_argument("--options", nargs="+", default=["-sV"], help="RustScan/Nmap options passed after '--'")
-    parser.add_argument("--concurrency", type=int, default=4, help="Number of concurrent scans")
     parser.add_argument("--timeout", type=int, default=0, help="Timeout per scan in seconds (0 = unlimited)")
     parser.add_argument("--top", action="store_true", help="Enable scanning top ports using RustScan's --top")
     parser.add_argument("-p", "--ports", help="Specify custom ports to scan, e.g., '22,80,443'")
+    parser.add_argument("--nmap-host-discovery", action="store_true", help="Use Nmap -sn to discover live hosts before scanning")
 
     args = parser.parse_args()
 
@@ -124,5 +139,17 @@ if __name__ == "__main__":
     if args.top and args.ports:
         print("[!] Error: You cannot use both --top and --ports (-p) at the same time.")
         sys.exit(1)
+    final_targets = args.targets
+    if args.nmap_host_discovery:
+        for t in args.targets:
+            if '/' not in t:
+                print(f"[!] Error: --nmap-host-discovery requires CIDR notation, but '{t}' is not a CIDR (e.g., /24)")
+                sys.exit(1)
 
-    asyncio.run(main(args.targets, args.options, args.output_dir, args.concurrency, args.timeout, args.top, args.ports))
+    if args.nmap_host_discovery:
+        final_targets = discover_live_hosts_nmap(args.targets)
+        print(f"[+] Final targets: {final_targets}")
+        if not final_targets:
+            print("[!] No live hosts found. Exiting.")
+            sys.exit(1)
+asyncio.run(main(final_targets, args.options, args.output_dir, args.timeout, args.top, args.ports))

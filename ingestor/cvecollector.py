@@ -4,6 +4,8 @@ import asyncio
 import argparse
 import json
 import requests
+import dns.message
+import dns.query
 from time import sleep
 from pathlib import Path
 
@@ -136,8 +138,15 @@ async def check_telnet(ip, port, timeout=5):
         return None
     except Exception:
         return None
-def check_Dns(ip, port, timeout=5):
-    return None
+
+
+def check_Dns(ip,port, test_domain="example.com"):
+    try:
+        q = dns.message.make_query(test_domain, dns.rdatatype.A)
+        r = dns.query.udp(q, ip, timeout=2,port=port)
+        return bool(r.answer)
+    except Exception:
+        return False
 
 def query_vulners(product, version):
     if not product or not version:
@@ -156,6 +165,8 @@ def query_vulners(product, version):
     return []
 
 async def check_services(hosts):
+
+    
     results = []
 
     for host in hosts:
@@ -163,7 +174,7 @@ async def check_services(hosts):
         ftp_result = None
         telnet_result = None
         enriched_services = []
-
+        
         for svc in host["services"]:
             name = (svc["service"] or "").lower()
             port = svc["port"]
@@ -177,6 +188,9 @@ async def check_services(hosts):
             # Check Telnet
             elif "telnet" in name:
                 telnet_result = await check_telnet(ip, port)
+            # Check DNS
+            if "domain" in name:
+                svc["DNS amplification (open resolver) vulnerability"] = check_Dns(ip, port)
 
             # Query Vulners
             cves = query_vulners(product, version)

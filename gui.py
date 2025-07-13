@@ -1,15 +1,58 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
+from tkinter import ttk
 from PIL import Image, ImageTk  # type: ignore # Pillow library
 import subprocess
 import sys
+import time
+import json
+import os
 from ingestor.cvecollector import *
 
 
+HISTORY_FILE = "input_history.json"
+
+def load_history():
+    if os.path.exists(HISTORY_FILE):
+        try:
+            with open(HISTORY_FILE, "r") as f:
+                data = json.load(f)
+                return data.get("targets", []), data.get("output_dirs", [])
+        except Exception:
+            pass
+    return [], []
+
+def save_history(targets, output_dirs):
+    try:
+        with open(HISTORY_FILE, "w") as f:
+            json.dump({"targets": targets, "output_dirs": output_dirs}, f)
+    except Exception:
+        pass
+
+# History lists for last 5 used inputs
+recent_targets, recent_output_dirs = load_history()
+
+def update_history(history_list, value):
+    if value in history_list:
+        history_list.remove(value)
+    history_list.insert(0, value)
+    if len(history_list) > 5:
+        history_list.pop()
+
 def run_script():
+    start_time = time.time()
     targets = target_entry.get().strip()
     output_dir = output_dir_entry.get().strip()
     cve_output_name= cve_output_name_entry.get().strip()
+
+    # Ensure targets and output directory are not empty
+    if not targets:
+        messagebox.showerror("Input Error", "Targets field cannot be empty.")
+        return
+    if not output_dir:
+        messagebox.showerror("Input Error", "Output Directory field cannot be empty.")
+        return
+
     if  cve_output_name=="":
         cve_output_name="output.json"
     if not cve_output_name.endswith('.json'):
@@ -25,11 +68,8 @@ def run_script():
     if O_var.get():
         selected_options.append("-O")
     print(selected_options)
-    # options_str = " ".join(f'"{selected_options}"')
     options_str = " ".join(f"'{opt}'" for opt in selected_options)
-    # options_str =str(options_str2)
     print(options_str)
-    concurrency = concurrency_entry.get()
     timeout = timeout_entry.get()
     ports = ports_entry.get().strip()
     use_top = top_var.get()
@@ -38,6 +78,14 @@ def run_script():
         messagebox.showerror("Error", "You cannot use both --top and --ports at the same time.")
         return
 
+    if nmapsn.get():
+        print(nmapsn.get())
+        targets_list = targets.split()
+        for t in targets_list:
+            if '/' not in t:
+                print(t)
+                messagebox.showerror("Error", f"--nmap-host-discovery requires CIDR notation, but {t} is not a CIDR (e.g., /24)")
+                return
     # Build command
     cmd = [sys.executable, "ingestor/rustIngestor.py"]
     if targets:
@@ -46,14 +94,14 @@ def run_script():
         cmd += ["-o", output_dir]
     if options_str:
         cmd += ["--options", options_str]
-    if concurrency:
-        cmd += ["--concurrency", concurrency]
     if timeout:
         cmd += ["--timeout", timeout]
     if use_top:
         cmd.append("--top")
     if ports:
         cmd += ["-p", ports]
+    if nmapsn.get() :
+        cmd.append("--nmap-host-discovery") 
 
 
     # Debug: print the command
@@ -63,6 +111,15 @@ def run_script():
 
     if result.returncode == 0:
         runcvecollector(output_dir,cve_output)
+        elapsed = time.time() - start_time
+        print(f"[+] All tasks completed in {elapsed:.2f} seconds.")
+        messagebox.showinfo("Done", f"All tasks completed in {elapsed:.2f} seconds.")
+        # Update history for targets and output_dir
+        update_history(recent_targets, targets)
+        update_history(recent_output_dirs, output_dir)
+        target_entry['values'] = recent_targets
+        output_dir_entry['values'] = recent_output_dirs
+        save_history(recent_targets, recent_output_dirs)
     else:
         messagebox.showerror("Error", f"Script failed with return code {result.returncode}")
 
@@ -71,25 +128,25 @@ def run_script():
 # Initialize window
 root = tk.Tk()
 root.title("RustScan Ingestor GUI")
-root.geometry("700x500")
+root.geometry("900x500")
 
 # Load and place background image
-bg_image = Image.open("nmapreport/static/img/bg.png")  # Replace with your file
-bg_photo = ImageTk.PhotoImage(bg_image)
-background_label = tk.Label(root, image=bg_photo)
-background_label.place(relwidth=1, relheight=1)
+# bg_image = Image.open("nmapreport/static/img/bg.png")  # Replace with your file
+# bg_photo = ImageTk.PhotoImage(bg_image)
+# background_label = tk.Label(root, image=bg_photo)
+# background_label.place(relwidth=1, relheight=1)
 
 # Frame to hold widgets so they stay above background
 frame = tk.Frame(root, bg="white", bd=2)
-frame.place(relx=0.1, rely=0.05, relwidth=0.8, relheight=0.9)
+frame.place(relx=0.1, rely=0.1, relwidth=0.9, relheight=0.9)
 
 # GUI Widgets
 tk.Label(frame, text="Targets (space-separated):").grid(row=0, column=0, sticky="w")
-target_entry = tk.Entry(frame, width=50)
+target_entry = ttk.Combobox(frame, width=50, values=recent_targets)
 target_entry.grid(row=0, column=1)
 
 tk.Label(frame, text="Output Directory:").grid(row=1, column=0, sticky="w")
-output_dir_entry = tk.Entry(frame, width=50)
+output_dir_entry = ttk.Combobox(frame, width=50, values=recent_output_dirs)
 output_dir_entry.grid(row=1, column=1)
 
 
@@ -102,10 +159,6 @@ tk.Checkbutton(frame, text="-sV", variable=sV_var).grid(row=2, column=1, sticky=
 tk.Checkbutton(frame, text="-A", variable=A_var).grid(row=3, column=1, sticky="w")
 tk.Checkbutton(frame, text="-O", variable=O_var).grid(row=4, column=1, sticky="w")
 
-tk.Label(frame, text="Concurrency:").grid(row=5, column=0, sticky="w")
-concurrency_entry = tk.Entry(frame)
-concurrency_entry.insert(0, "4")
-concurrency_entry.grid(row=5, column=1)
 
 tk.Label(frame, text="Timeout (seconds):").grid(row=6, column=0, sticky="w")
 timeout_entry = tk.Entry(frame)
@@ -123,6 +176,11 @@ tk.Label(frame, text="cve Collector filename:").grid(row=9, column=0, sticky="w"
 cve_output_name_entry = tk.Entry(frame, width=50)
 cve_output_name_entry.grid(row=9, column=1)
 
-tk.Button(frame, text="Run", command=run_script).grid(row=10, column=1, pady=10)
+nmapsn = tk.BooleanVar(value=True)
+tk.Label(frame, text="nmap host-discovery:").grid(row=10, column=0, sticky="w")
+tk.Checkbutton(frame, text="nmap -sn", variable=nmapsn).grid(row=10, column=1, sticky="w")
+
+
+tk.Button(frame, text="Run", command=run_script).grid(row=11, column=1, pady=10)
 
 root.mainloop()
