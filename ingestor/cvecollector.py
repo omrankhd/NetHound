@@ -6,8 +6,13 @@ import json
 import requests
 import dns.message
 import dns.query
+import check_dns
+import check_ftp
+import check_smtp
+import check_smb
 from time import sleep
 from pathlib import Path
+import pprint
 
 VULNERS_API_URL = "https://vulners.com/api/v3/burp/software/"
 
@@ -43,40 +48,40 @@ def parse_nmap_xml(xml_file):
         results.append({"ip": ip, "services": services})
     return results
 
-def check_ftp(ip, port, timeout=5):
-    default_creds = [
-        ("anonymous", "anonymous@"),
-        ("admin", "admin"),
-        ("admin", "password"),
-        ("root", "root"),
-        ("user", "user"),
-        ("ftp", "ftp"),
-        ("", ""),
-        # Cisco
-        ("cisco", "cisco"),
-        ("admin", "cisco"),
-        ("cisco", "admin"),
-        # D-Link
-        ("admin", ""),
-        ("admin", "admin"),
-        # Zyxel
-        ("admin", "1234"),
-        # Huawei
-        ("admin", "admin"),
-        ("root", "admin"),
-        # Netgear
-        ("admin", "password"),
-    ]
-    for username, password in default_creds:
-        try:
-            ftp = ftplib.FTP()
-            ftp.connect(ip, port, timeout=timeout)
-            ftp.login(user=username, passwd=password)
-            ftp.quit()
-            return (username, password)
-        except Exception:
-            continue
-    return None
+# def check_ftp(ip, port, timeout=5):
+#     default_creds = [
+#         ("anonymous", "anonymous@"),
+#         ("admin", "admin"),
+#         ("admin", "password"),
+#         ("root", "root"),
+#         ("user", "user"),
+#         ("ftp", "ftp"),
+#         ("", ""),
+#         # Cisco
+#         ("cisco", "cisco"),
+#         ("admin", "cisco"),
+#         ("cisco", "admin"),
+#         # D-Link
+#         ("admin", ""),
+#         ("admin", "admin"),
+#         # Zyxel
+#         ("admin", "1234"),
+#         # Huawei
+#         ("admin", "admin"),
+#         ("root", "admin"),
+#         # Netgear
+#         ("admin", "password"),
+#     ]
+#     for username, password in default_creds:
+#         try:
+#             ftp = ftplib.FTP()
+#             ftp.connect(ip, port, timeout=timeout)
+#             ftp.login(user=username, passwd=password)
+#             ftp.quit()
+#             return (username, password)
+#         except Exception:
+#             continue
+#     return None
 
 async def check_telnet(ip, port, timeout=5):
     default_creds = [
@@ -149,17 +154,28 @@ def check_Dns(ip,port, test_domain="example.com"):
         return False
 
 def query_vulners(product, version):
-    if not product or not version:
-        return []
-    params = {
-        'software': f"{product} {version}"
-    }
+    url = "https://vulners.com/api/v3/search/lucene/"
+    query = f'{product} {version}'
+    params = {'query': query, 'size': 10}
     try:
-        response = requests.get(VULNERS_API_URL, params=params)
+        response = requests.get(url, params=params, timeout=10)
         if response.status_code == 200:
             data = response.json()
-            if data['result'] == 'OK':
-                return [cve['id'] for cve in data['data']['search'] if 'id' in cve]
+            pprint.pprint(data)
+            cves = set()
+            # Lucene endpoint
+            if data.get('result') == 'OK' and 'documents' in data.get('data', {}):
+                for doc in data['data']['documents']:
+                    if 'cvelist' in doc and doc['cvelist']:
+                        cves.update(doc['cvelist'])
+                    elif 'id' in doc and doc['id'].startswith('CVE-'):
+                        cves.add(doc['id'])
+            # Burp/software or other endpoint
+            elif data.get('result') == 'OK' and 'search' in data.get('data', {}):
+                for doc in data['data']['search']:
+                    cvelist = doc.get('_source', {}).get('cvelist', [])
+                    cves.update(cvelist)
+            return list(cves)
     except Exception as e:
         print(f"[!] Vulners API error for {product} {version}: {e}")
     return []
@@ -180,18 +196,22 @@ async def check_services(hosts):
             port = svc["port"]
             product = svc.get("product")
             version = svc.get("version")
-
+            print (product)
+            print (version)
             # Check FTP
             if "ftp" in name:
-                ftp_result = check_ftp(ip, port)
+                ftp_result = check_ftp.run_ftp_vuln_scan(ip, port, timeout=10)
 
             # Check Telnet
-            elif "telnet" in name:
+            if "telnet" in name:
                 telnet_result = await check_telnet(ip, port)
             # Check DNS
             if "domain" in name:
-                svc["DNS amplification (open resolver) vulnerability"] = check_Dns(ip, port)
-
+                svc["DNS vulnerability check"] = check_dns.run_dns_vuln_scan(ip)
+            if "smtp" in name:
+                svc["SMTP vulnerability check"] = check_smtp.run_smtp_vuln_scan(ip, port, timeout=10)   
+            if "smb" in name:
+                svc["SMB vulnerability check"] = check_smb.run_smb_vuln_scan(ip, port, timeout=10)  
             # Query Vulners
             cves = query_vulners(product, version)
             sleep(1) 
@@ -200,7 +220,7 @@ async def check_services(hosts):
 
         results.append({
             "ip": ip,
-            "ftp_anonymous": ftp_result if ftp_result is not None else False,
+            "FTP vulnerability check": ftp_result if ftp_result is not None else False,
             "telnet_guest": telnet_result if telnet_result is not None else False,
             "services": enriched_services
         })

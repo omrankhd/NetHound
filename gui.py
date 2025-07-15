@@ -62,6 +62,7 @@ def run_script():
     # Collect selected options into a single quoted string
     selected_options = []
     if sV_var.get():
+        print("svtrue")
         selected_options.append("-sV")
     if A_var.get():
         selected_options.append("-A")
@@ -128,7 +129,8 @@ def run_script():
 # Initialize window
 root = tk.Tk()
 root.title("RustScan Ingestor GUI")
-root.geometry("900x500")
+root.geometry("700x400")  # More compact size
+# root.resizable(False, False)  # Prevent resizing
 
 # Load and place background image
 # bg_image = Image.open("nmapreport/static/img/bg.png")  # Replace with your file
@@ -138,7 +140,7 @@ root.geometry("900x500")
 
 # Frame to hold widgets so they stay above background
 frame = tk.Frame(root, bg="white", bd=2)
-frame.place(relx=0.1, rely=0.1, relwidth=0.9, relheight=0.9)
+frame.place(relx=0.05, rely=0.08, relwidth=0.9, relheight=0.84)
 
 # GUI Widgets
 tk.Label(frame, text="Targets (space-separated):").grid(row=0, column=0, sticky="w")

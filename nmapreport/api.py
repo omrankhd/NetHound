@@ -125,39 +125,57 @@ def label(request, objtype, label, hashstr):
     return HttpResponse(json.dumps(res), content_type="application/json")
 
 def port_details(request, address, portid):
-	r = {}
+    r = {}
 
-	if 'auth' not in request.session:
-		return False
+    if 'auth' not in request.session:
+        return False
 
-	oo = xmltodict.parse(open('/opt/xml/'+request.session['scanfile'], 'r').read())
-	r['out'] = json.dumps(oo['nmaprun'], indent=4)
-	o = json.loads(r['out'])
+    xml_dir = '/opt/xml/'
+    xml_path = None
 
-	for ik in o['host']:
+    scanfile = request.session.get('scanfile')
+    scanfolder = request.session.get('scanfolder')
 
-		# this fix single host report
-		if type(ik) is dict:
-			i = ik
-		else:
-			i = o['host']
+    if scanfile:
+        xml_path = os.path.join(xml_dir, scanfile)
+    elif scanfolder:
+        # Try to find a .xml file in the scanfolder
+        folder_path = os.path.join(xml_dir, scanfolder)
+        if os.path.isdir(folder_path):
+            for fname in os.listdir(folder_path):
+                if fname.endswith('.xml'):
+                    xml_path = os.path.join(folder_path, fname)
+                    break
+    if not xml_path or not os.path.exists(xml_path):
+        return HttpResponse(json.dumps({'error': 'scan XML not found'}), content_type="application/json")
 
-		if '@addr' in i['address']:
-			saddress = i['address']['@addr']
-		elif type(i['address']) is list:
-			for ai in i['address']:
-				if ai['@addrtype'] == 'ipv4':
-					saddress = ai['@addr'] 
+    oo = xmltodict.parse(open(xml_path, 'r').read())
+    r['out'] = json.dumps(oo['nmaprun'], indent=4)
+    o = json.loads(r['out'])
 
-		if str(saddress) == address:
-			for pobj in i['ports']['port']:
-				if type(pobj) is dict:
-					p = pobj
-				else:
-					p = i['ports']['port']
+    for ik in o['host']:
+        # this fix single host report
+        if type(ik) is dict:
+            i = ik
+        else:
+            i = o['host']
 
-				if p['@portid'] == portid:
-					return HttpResponse(json.dumps(p, indent=4), content_type="application/json")
+        if '@addr' in i['address']:
+            saddress = i['address']['@addr']
+        elif type(i['address']) is list:
+            for ai in i['address']:
+                if ai['@addrtype'] == 'ipv4':
+                    saddress = ai['@addr']
+
+        if str(saddress) == address:
+            for pobj in i['ports']['port']:
+                if type(pobj) is dict:
+                    p = pobj
+                else:
+                    p = i['ports']['port']
+
+                if p['@portid'] == portid:
+                    return HttpResponse(json.dumps(p, indent=4), content_type="application/json")
 
 def genPDF(request):
 	if 'auth' not in request.session:

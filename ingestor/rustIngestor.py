@@ -26,12 +26,13 @@ async def run_rustscan(target: str, options: list, output_dir: str, timeout: int
         cmd += ["-p", ports]
 
     
-    subnet_folder = os.path.join(output_dir, target.replace('/', '_'))
+    # subnet_folder = os.path.join(output_dir, target.replace('/', '_'))
+    subnet_folder = output_dir
     os.makedirs(subnet_folder, exist_ok=True)
     output_template = os.path.join(subnet_folder, "{{ip}}.xml")
 
    
-    cmd += ["--"] + options + ["-oX", output_template]
+    cmd += ["--"] + options +["-Pn"]+ ["-oX", output_template]
 
     try:
         print(cmd)
@@ -93,7 +94,8 @@ async def scan_target(target: str, options: list, output_dir: str, timeout: int,
         try:
             net = ip_network(target, strict=False)
             for ip in net.hosts():
-                ip_path = os.path.join(output_dir, target.replace('/', '_'), f"{ip}.xml")
+                # ip_path = os.path.join(output_dir, target.replace('/', '_'), f"{ip}.xml")
+                ip_path = os.path.join(output_dir, f"{ip}.xml")
                 if os.path.exists(ip_path):
                     json_file = ip_path.replace(".xml", ".json")
                     await parse_and_save(ip_path, json_file)
@@ -110,7 +112,7 @@ def discover_live_hosts_nmap(targets):
         print(f"[+] Running Nmap host discovery on {target}")
         try:
             result = subprocess.run(["nmap", "-sn", target], capture_output=True, text=True, check=True)
-            found = re.findall(r"Nmap scan report for ([\d\.]+)", result.stdout)
+            found = re.findall(r"Nmap scan report for (?:.+? )?\(?(\d{1,3}(?:\.\d{1,3}){3})\)?", result.stdout)
             print(f"[+] Found {len(found)} live hosts in {target}")
             live_hosts.update(found)
         except subprocess.CalledProcessError as e:
@@ -127,7 +129,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Native RustScan Ingestor with Optimized Batch Settings")
     parser.add_argument("targets", nargs="+", help="List of target IPs or CIDRs")
     parser.add_argument("-o", "--output-dir", default="rustscan_results", help="Directory to store output JSON files")
-    parser.add_argument("--options", nargs="+", default=["-sV"], help="RustScan/Nmap options passed after '--'")
+    parser.add_argument("--options", nargs="+", default=[""], help="RustScan/Nmap options passed after '--'")
     parser.add_argument("--timeout", type=int, default=0, help="Timeout per scan in seconds (0 = unlimited)")
     parser.add_argument("--top", action="store_true", help="Enable scanning top ports using RustScan's --top")
     parser.add_argument("-p", "--ports", help="Specify custom ports to scan, e.g., '22,80,443'")
@@ -148,8 +150,8 @@ if __name__ == "__main__":
 
     if args.nmap_host_discovery:
         final_targets = discover_live_hosts_nmap(args.targets)
-        print(f"[+] Final targets: {final_targets}")
         if not final_targets:
             print("[!] No live hosts found. Exiting.")
             sys.exit(1)
+print(f"[+] Final targets: {final_targets}")
 asyncio.run(main(final_targets, args.options, args.output_dir, args.timeout, args.top, args.ports))
