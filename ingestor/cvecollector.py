@@ -6,10 +6,7 @@ import json
 import requests
 import dns.message
 import dns.query
-import check_dns
-import check_ftp
-import check_smtp
-import check_smb
+from vuln_checkers import check_ftp, check_dns, check_smtp, check_smb,check_telnet
 from time import sleep
 from pathlib import Path
 import pprint
@@ -48,19 +45,29 @@ def parse_nmap_xml(xml_file):
         results.append({"ip": ip, "services": services})
     return results
 
-# def check_ftp(ip, port, timeout=5):
+
+# async def check_telnet(ip, port, timeout=5):
 #     default_creds = [
-#         ("anonymous", "anonymous@"),
+#         # Generic
 #         ("admin", "admin"),
-#         ("admin", "password"),
 #         ("root", "root"),
+#         ("admin", "password"),
 #         ("user", "user"),
-#         ("ftp", "ftp"),
-#         ("", ""),
+#         ("guest", "guest"),
+#         ("root", "admin"),
+#         ("root", "password"),
+#         ("admin", ""),  # admin with blank password
+#         ("", "admin"),   # blank username, admin password
 #         # Cisco
 #         ("cisco", "cisco"),
 #         ("admin", "cisco"),
 #         ("cisco", "admin"),
+#         # Juniper
+#         ("root", "Juniper"),
+#         ("root", "Juniper123"),
+#         # MikroTik
+#         ("admin", ""),
+#         ("admin", "admin"),
 #         # D-Link
 #         ("admin", ""),
 #         ("admin", "admin"),
@@ -72,77 +79,33 @@ def parse_nmap_xml(xml_file):
 #         # Netgear
 #         ("admin", "password"),
 #     ]
-#     for username, password in default_creds:
-#         try:
-#             ftp = ftplib.FTP()
-#             ftp.connect(ip, port, timeout=timeout)
-#             ftp.login(user=username, passwd=password)
-#             ftp.quit()
-#             return (username, password)
-#         except Exception:
-#             continue
-#     return None
-
-async def check_telnet(ip, port, timeout=5):
-    default_creds = [
-        # Generic
-        ("admin", "admin"),
-        ("root", "root"),
-        ("admin", "password"),
-        ("user", "user"),
-        ("guest", "guest"),
-        ("root", "admin"),
-        ("root", "password"),
-        ("admin", ""),  # admin with blank password
-        ("", "admin"),   # blank username, admin password
-        # Cisco
-        ("cisco", "cisco"),
-        ("admin", "cisco"),
-        ("cisco", "admin"),
-        # Juniper
-        ("root", "Juniper"),
-        ("root", "Juniper123"),
-        # MikroTik
-        ("admin", ""),
-        ("admin", "admin"),
-        # D-Link
-        ("admin", ""),
-        ("admin", "admin"),
-        # Zyxel
-        ("admin", "1234"),
-        # Huawei
-        ("admin", "admin"),
-        ("root", "admin"),
-        # Netgear
-        ("admin", "password"),
-    ]
-    try:
-        reader, writer = await asyncio.wait_for(
-            asyncio.open_connection(ip, port), timeout=timeout
-        )
-        for username, password in default_creds:
-            try:
-                # Wait for login prompt
-                data = await asyncio.wait_for(reader.readuntil(b":"), timeout=2)
-                writer.write((username + "\n").encode())
-                await writer.drain()
-                # Wait for password prompt
-                data = await asyncio.wait_for(reader.readuntil(b":"), timeout=2)
-                writer.write((password + "\n").encode())
-                await writer.drain()
-                # Read response after login attempt
-                data = await asyncio.wait_for(reader.read(1024), timeout=2)
-                if b"Last login" in data or b"#" in data or b"$" in data or b"Welcome" in data:
-                    writer.close()
-                    await writer.wait_closed()
-                    return (username, password)
-            except Exception:
-                continue
-        writer.close()
-        await writer.wait_closed()
-        return None
-    except Exception:
-        return None
+#     try:
+#         reader, writer = await asyncio.wait_for(
+#             asyncio.open_connection(ip, port), timeout=timeout
+#         )
+#         for username, password in default_creds:
+#             try:
+#                 # Wait for login prompt
+#                 data = await asyncio.wait_for(reader.readuntil(b":"), timeout=2)
+#                 writer.write((username + "\n").encode())
+#                 await writer.drain()
+#                 # Wait for password prompt
+#                 data = await asyncio.wait_for(reader.readuntil(b":"), timeout=2)
+#                 writer.write((password + "\n").encode())
+#                 await writer.drain()
+#                 # Read response after login attempt
+#                 data = await asyncio.wait_for(reader.read(1024), timeout=2)
+#                 if b"Last login" in data or b"#" in data or b"$" in data or b"Welcome" in data:
+#                     writer.close()
+#                     await writer.wait_closed()
+#                     return (username, password)
+#             except Exception:
+#                 continue
+#         writer.close()
+#         await writer.wait_closed()
+#         return None
+#     except Exception:
+#         return None
 
 
 def check_Dns(ip,port, test_domain="example.com"):
@@ -187,8 +150,6 @@ async def check_services(hosts):
 
     for host in hosts:
         ip = host["ip"]
-        ftp_result = None
-        telnet_result = None
         enriched_services = []
         
         for svc in host["services"]:
@@ -199,18 +160,18 @@ async def check_services(hosts):
             print (product)
             print (version)
             # Check FTP
-            if "ftp" in name:
-                ftp_result = check_ftp.run_ftp_vuln_scan(ip, port, timeout=10)
+            if "ftp" in name or port == (21 or 20 ):
+               svc["ftp vulnerability check"]  = check_ftp.run_ftp_vuln_scan(ip, port, timeout=10)
 
             # Check Telnet
-            if "telnet" in name:
-                telnet_result = await check_telnet(ip, port)
+            if "telnet" in name or port == 23:
+                svc["telnet vulnerability check"] = check_telnet.run_telnet_vuln_scan(ip, port)
             # Check DNS
-            if "domain" in name:
+            if "domain" in name or port == 53:
                 svc["DNS vulnerability check"] = check_dns.run_dns_vuln_scan(ip)
-            if "smtp" in name:
+            if "smtp" in name or port == 25:
                 svc["SMTP vulnerability check"] = check_smtp.run_smtp_vuln_scan(ip, port, timeout=10)   
-            if "smb" in name:
+            if "smb" in name or port == 445:
                 svc["SMB vulnerability check"] = check_smb.run_smb_vuln_scan(ip, port, timeout=10)  
             # Query Vulners
             cves = query_vulners(product, version)
@@ -220,14 +181,10 @@ async def check_services(hosts):
 
         results.append({
             "ip": ip,
-            "FTP vulnerability check": ftp_result if ftp_result is not None else False,
-            "telnet_guest": telnet_result if telnet_result is not None else False,
             "services": enriched_services
         })
 
     return results
-
-from pathlib import Path
 
 def load_all_xml_files(folder_path):
     xml_files = list(Path(folder_path).rglob("*.xml"))  # recursively get .xml files
