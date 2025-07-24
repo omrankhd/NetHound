@@ -6,13 +6,14 @@ import json
 import requests
 import dns.message
 import dns.query
-from vuln_checkers import check_ftp, check_dns, check_smtp, check_smb,check_telnet
+from vuln_checkers import check_ftp, check_dns, check_smtp, check_smb,check_telnet,checkservice3
 from time import sleep
 from pathlib import Path
 import pprint
+from vuln_checkers.vulnerability_scanner import MultiSourceVulnerabilityScanner
 
-VULNERS_API_URL = "https://vulners.com/api/v3/burp/software/"
 
+scanner = MultiSourceVulnerabilityScanner()
 def parse_nmap_xml(xml_file):
     try:
         tree = ET.parse(xml_file)
@@ -45,69 +46,6 @@ def parse_nmap_xml(xml_file):
         results.append({"ip": ip, "services": services})
     return results
 
-
-# async def check_telnet(ip, port, timeout=5):
-#     default_creds = [
-#         # Generic
-#         ("admin", "admin"),
-#         ("root", "root"),
-#         ("admin", "password"),
-#         ("user", "user"),
-#         ("guest", "guest"),
-#         ("root", "admin"),
-#         ("root", "password"),
-#         ("admin", ""),  # admin with blank password
-#         ("", "admin"),   # blank username, admin password
-#         # Cisco
-#         ("cisco", "cisco"),
-#         ("admin", "cisco"),
-#         ("cisco", "admin"),
-#         # Juniper
-#         ("root", "Juniper"),
-#         ("root", "Juniper123"),
-#         # MikroTik
-#         ("admin", ""),
-#         ("admin", "admin"),
-#         # D-Link
-#         ("admin", ""),
-#         ("admin", "admin"),
-#         # Zyxel
-#         ("admin", "1234"),
-#         # Huawei
-#         ("admin", "admin"),
-#         ("root", "admin"),
-#         # Netgear
-#         ("admin", "password"),
-#     ]
-#     try:
-#         reader, writer = await asyncio.wait_for(
-#             asyncio.open_connection(ip, port), timeout=timeout
-#         )
-#         for username, password in default_creds:
-#             try:
-#                 # Wait for login prompt
-#                 data = await asyncio.wait_for(reader.readuntil(b":"), timeout=2)
-#                 writer.write((username + "\n").encode())
-#                 await writer.drain()
-#                 # Wait for password prompt
-#                 data = await asyncio.wait_for(reader.readuntil(b":"), timeout=2)
-#                 writer.write((password + "\n").encode())
-#                 await writer.drain()
-#                 # Read response after login attempt
-#                 data = await asyncio.wait_for(reader.read(1024), timeout=2)
-#                 if b"Last login" in data or b"#" in data or b"$" in data or b"Welcome" in data:
-#                     writer.close()
-#                     await writer.wait_closed()
-#                     return (username, password)
-#             except Exception:
-#                 continue
-#         writer.close()
-#         await writer.wait_closed()
-#         return None
-#     except Exception:
-#         return None
-
-
 def check_Dns(ip,port, test_domain="example.com"):
     try:
         q = dns.message.make_query(test_domain, dns.rdatatype.A)
@@ -122,9 +60,13 @@ def query_vulners(product, version):
     params = {'query': query, 'size': 10}
     try:
         response = requests.get(url, params=params, timeout=10)
+        prepared_request = requests.Request('GET', url, params=params).prepare()
+
+        print("Request URL:", prepared_request.url)
+
         if response.status_code == 200:
             data = response.json()
-            pprint.pprint(data)
+            # pprint.pprint(data)
             cves = set()
             # Lucene endpoint
             if data.get('result') == 'OK' and 'documents' in data.get('data', {}):
@@ -157,6 +99,28 @@ async def check_services(hosts):
             port = svc["port"]
             product = svc.get("product")
             version = svc.get("version")
+            # Run service detection for this port (returns a list of dicts)
+            misc_results = checkservice3.run_service_detection(ip, str(port))
+            svc["Misc"] = misc_results
+            # Find the result for the current port
+            
+            if misc_results:
+            # Option 1: Use first result (if the function returns results for the specific port only)
+                result = misc_results[0]
+                
+                if not product and result:
+                    product = result.get("service", "")
+                    if product:
+                        svc.update({"product": product})
+                
+                if product == "Unknown":
+                    product = svc.get("service", "")
+                
+                if not version and result:
+                    version = result.get("version", "")
+                    if version:
+                        svc.update({"version": version})
+            
             print (product)
             print (version)
             # Check FTP
@@ -174,10 +138,18 @@ async def check_services(hosts):
             if "smb" in name or port == 445:
                 svc["SMB vulnerability check"] = check_smb.run_smb_vuln_scan(ip, port, timeout=10)  
             # Query Vulners
-            cves = query_vulners(product, version)
-            sleep(1) 
-            svc.update({"cves": cves})
+            if product and version:
+                print(f"Querying Vulners for {product} {version} on {ip}:{port}")
+                cves = query_vulners(product, version)
+                sleep(1) 
+                svc.update({"cves": cves})
+            else:
+                print(f"Skipping Vulners query for {ip}:{port} - missing product/version")
+            
+            svc["vulns"]  = scanner.scan_vulnerabilities(product, version, port)
+
             enriched_services.append(svc)
+
 
         results.append({
             "ip": ip,

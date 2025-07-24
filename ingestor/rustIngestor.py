@@ -26,7 +26,8 @@ async def run_rustscan(target: str, options: list, output_dir: str, timeout: int
         cmd += ["-p", ports]
 
     
-    # subnet_folder = os.path.join(output_dir, target.replace('/', '_'))
+    # subnet_folder = os.path.join("/opt/xml/",output_dir)
+
     subnet_folder = output_dir
     os.makedirs(subnet_folder, exist_ok=True)
     output_template = os.path.join(subnet_folder, "{{ip}}.xml")

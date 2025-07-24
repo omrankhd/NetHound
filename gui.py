@@ -42,7 +42,8 @@ def update_history(history_list, value):
 def run_script():
     start_time = time.time()
     targets = target_entry.get().strip()
-    output_dir = output_dir_entry.get().strip()
+    output_dir =  os.path.join("/opt/xml/",output_dir_entry.get().strip())
+    output_dir_name = output_dir_entry.get().strip()
     cve_output_name= cve_output_name_entry.get().strip()
 
     # Ensure targets and output directory are not empty
@@ -117,7 +118,7 @@ def run_script():
         messagebox.showinfo("Done", f"All tasks completed in {elapsed:.2f} seconds.")
         # Update history for targets and output_dir
         update_history(recent_targets, targets)
-        update_history(recent_output_dirs, output_dir)
+        update_history(recent_output_dirs, output_dir_name)
         target_entry['values'] = recent_targets
         output_dir_entry['values'] = recent_output_dirs
         save_history(recent_targets, recent_output_dirs)
