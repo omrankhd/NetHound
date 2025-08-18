@@ -47,7 +47,7 @@ def run_script():
     cve_output_name= cve_output_name_entry.get().strip()
 
     # Ensure targets and output directory are not empty
-    if not targets:
+    if not targets:     
         messagebox.showerror("Input Error", "Targets field cannot be empty.")
         return
     if not output_dir:
@@ -63,12 +63,21 @@ def run_script():
     # Collect selected options into a single quoted string
     selected_options = []
     if sV_var.get():
-        print("svtrue")
         selected_options.append("-sV")
+    if sS_var.get():
+        selected_options.append("-sS")
+    if sT_var.get():
+        selected_options.append("-sT")
+    if sU_var.get():
+        selected_options.append("-sU")
     if A_var.get():
         selected_options.append("-A")
     if O_var.get():
         selected_options.append("-O")
+    if Pn_var.get():
+        selected_options.append("-Pn")
+    if T4_var.get():
+        selected_options.append("-T4")
     print(selected_options)
     options_str = " ".join(f"'{opt}'" for opt in selected_options)
     print(options_str)
@@ -88,6 +97,7 @@ def run_script():
                 print(t)
                 messagebox.showerror("Error", f"--nmap-host-discovery requires CIDR notation, but {t} is not a CIDR (e.g., /24)")
                 return
+    
     # Build command
     cmd = [sys.executable, "ingestor/rustIngestor.py"]
     if targets:
@@ -130,60 +140,167 @@ def run_script():
 # Initialize window
 root = tk.Tk()
 root.title("RustScan Ingestor GUI")
-root.geometry("700x400")  # More compact size
-# root.resizable(False, False)  # Prevent resizing
+root.geometry("900x600")  # Larger size to accommodate all options
 
-# Load and place background image
-# bg_image = Image.open("nmapreport/static/img/bg.png")  # Replace with your file
-# bg_photo = ImageTk.PhotoImage(bg_image)
-# background_label = tk.Label(root, image=bg_photo)
-# background_label.place(relwidth=1, relheight=1)
+# Set window icon
+try:
+    icon_path = "nmapreport/static/logomin.png"
+    if os.path.exists(icon_path):
+        icon = ImageTk.PhotoImage(Image.open(icon_path))
+        root.iconphoto(True, icon)
+except Exception as e:
+    print(f"Could not load icon: {e}")
 
-# Frame to hold widgets so they stay above background
-frame = tk.Frame(root, bg="white", bd=2)
-frame.place(relx=0.05, rely=0.08, relwidth=0.9, relheight=0.84)
+# Configure window minimum size and background
+root.minsize(600, 400)
+root.configure(bg='#f0f0f0')  # Light gray background
 
-# GUI Widgets
-tk.Label(frame, text="Targets (space-separated):").grid(row=0, column=0, sticky="w")
-target_entry = ttk.Combobox(frame, width=50, values=recent_targets)
-target_entry.grid(row=0, column=1)
+# Configure root window to expand properly
+root.grid_rowconfigure(0, weight=1)
+root.grid_columnconfigure(0, weight=1)
 
-tk.Label(frame, text="Output Directory:").grid(row=1, column=0, sticky="w")
-output_dir_entry = ttk.Combobox(frame, width=50, values=recent_output_dirs)
-output_dir_entry.grid(row=1, column=1)
+# Create main container frame
+container = tk.Frame(root)
+container.pack(fill="both", expand=True)
+
+# Create a canvas with scrollbar
+canvas = tk.Canvas(container, bg='#f0f0f0')
+scrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
+scrollable_frame = tk.Frame(canvas, bg="#ffffff", bd=2, relief=tk.GROOVE)
+
+# Configure scrollable frame to expand horizontally
+scrollable_frame.grid_columnconfigure(1, weight=1)
+scrollable_frame.grid_columnconfigure(2, weight=1)
+
+# Configure the canvas
+canvas.configure(yscrollcommand=scrollbar.set)
+canvas.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+
+# Pack the scrollbar and canvas
+scrollbar.pack(side="right", fill="y")
+canvas.pack(side="left", fill="both", expand=True, padx=20, pady=20)
+
+# Make sure the frame expands to the canvas width
+scrollable_frame.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+canvas.bind('<Configure>', lambda e: canvas.itemconfig(canvas_frame, width=e.width-40))
+
+# Create a window in the canvas for the frame
+canvas_frame = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+
+# Update scroll region when the frame size changes
+def configure_scroll_region(event):
+    canvas.configure(scrollregion=canvas.bbox("all"))
+
+def configure_frame_width(event):
+    canvas.itemconfig(canvas_frame, width=event.width)  # 40 is for padding
+
+# Bind events
+scrollable_frame.bind("<Configure>", configure_scroll_region)
+canvas.bind("<Configure>", configure_frame_width)
+
+# Enable mousewheel scrolling
+def on_mousewheel(event):
+    if event.num == 5 or event.delta < 0:
+        canvas.yview_scroll(1, "units")
+    elif event.num == 4 or event.delta > 0:
+        canvas.yview_scroll(-1, "units")
+
+# Bind mouse wheel for different platforms
+canvas.bind_all("<MouseWheel>", on_mousewheel)  # Windows and MacOS
+canvas.bind_all("<Button-4>", on_mousewheel)    # Linux
+canvas.bind_all("<Button-5>", on_mousewheel)    # Linux
+
+# Bind scrolling when mouse is over the scrollbar
+scrollbar.bind("<MouseWheel>", on_mousewheel)
+scrollbar.bind("<Button-4>", on_mousewheel)
+scrollbar.bind("<Button-5>", on_mousewheel)
+
+# Main frame is now scrollable_frame
+frame = scrollable_frame
+
+# Add padding around all widgets
+padding = {'padx': 10, 'pady': 5}
+
+# Title label with custom font
+title_label = tk.Label(frame, text="RustScan Ingestor", font=('Helvetica', 16, 'bold'), bg="#ffffff")
+title_label.grid(row=0, column=0, columnspan=3, pady=15)
+
+# GUI Widgets with padding
+tk.Label(frame, text="Targets (space-separated):", bg="#ffffff").grid(row=1, column=0, sticky="w", **padding)
+target_entry = ttk.Combobox(frame, width=70, values=recent_targets)
+target_entry.grid(row=1, column=1, columnspan=2, sticky="ew", **padding)
+
+tk.Label(frame, text="Output Directory:", bg="#ffffff").grid(row=2, column=0, sticky="w", **padding)
+output_dir_entry = ttk.Combobox(frame, width=70, values=recent_output_dirs)
+output_dir_entry.grid(row=2, column=1, columnspan=2, sticky="ew", **padding)
+
+# Add a separator
+ttk.Separator(frame, orient='horizontal').grid(row=3, column=0, columnspan=3, sticky="ew", pady=10)
+
+# Scan Options section with a frame
+options_frame = tk.LabelFrame(frame, text="Scan Options", bg="#ffffff", padx=10, pady=5)
+options_frame.grid(row=4, column=0, columnspan=3, sticky="ew", **padding)
+
+# Create variables for checkboxes
+sV_var = tk.BooleanVar(value=True)  # Version detection
+sS_var = tk.BooleanVar()  # SYN scan
+sT_var = tk.BooleanVar()  # TCP connect scan
+sU_var = tk.BooleanVar()  # UDP scan
+A_var = tk.BooleanVar()   # Aggressive scan
+O_var = tk.BooleanVar()   # OS detection
+Pn_var = tk.BooleanVar()  # No ping
+T4_var = tk.BooleanVar()  # Timing template 4
+
+# Create and position checkboxes in two columns inside options_frame
+tk.Checkbutton(options_frame, text="-sV (Version detection)", variable=sV_var, bg="#ffffff").grid(row=0, column=0, sticky="w", padx=5)
+tk.Checkbutton(options_frame, text="-sS (SYN scan)", variable=sS_var, bg="#ffffff").grid(row=1, column=0, sticky="w", padx=5)
+tk.Checkbutton(options_frame, text="-sT (TCP connect scan)", variable=sT_var, bg="#ffffff").grid(row=2, column=0, sticky="w", padx=5)
+tk.Checkbutton(options_frame, text="-sU (UDP scan)", variable=sU_var, bg="#ffffff").grid(row=3, column=0, sticky="w", padx=5)
+
+tk.Checkbutton(options_frame, text="-A (Aggressive scan)", variable=A_var, bg="#ffffff").grid(row=0, column=1, sticky="w", padx=5)
+tk.Checkbutton(options_frame, text="-O (OS detection)", variable=O_var, bg="#ffffff").grid(row=1, column=1, sticky="w", padx=5)
+tk.Checkbutton(options_frame, text="-Pn (No ping)", variable=Pn_var, bg="#ffffff").grid(row=2, column=1, sticky="w", padx=5)
+tk.Checkbutton(options_frame, text="-T4 (Aggressive timing)", variable=T4_var, bg="#ffffff").grid(row=3, column=1, sticky="w", padx=5)
 
 
+# Additional options frame
+additional_frame = tk.LabelFrame(frame, text="Additional Settings", bg="#ffffff", padx=10, pady=5)
+additional_frame.grid(row=5, column=0, columnspan=3, sticky="ew", **padding)
 
-tk.Label(frame, text="Options:").grid(row=2, column=0, sticky="w")
-sV_var = tk.BooleanVar(value=True)
-A_var = tk.BooleanVar()
-O_var = tk.BooleanVar()
-tk.Checkbutton(frame, text="-sV", variable=sV_var).grid(row=2, column=1, sticky="w")
-tk.Checkbutton(frame, text="-A", variable=A_var).grid(row=3, column=1, sticky="w")
-tk.Checkbutton(frame, text="-O", variable=O_var).grid(row=4, column=1, sticky="w")
-
-
-tk.Label(frame, text="Timeout (seconds):").grid(row=6, column=0, sticky="w")
-timeout_entry = tk.Entry(frame)
+# Timeout and top ports settings
+tk.Label(additional_frame, text="Timeout (seconds):", bg="#ffffff").grid(row=0, column=0, sticky="w", **padding)
+timeout_entry = tk.Entry(additional_frame, width=10)
 timeout_entry.insert(0, "0")
-timeout_entry.grid(row=6, column=1)
+timeout_entry.grid(row=0, column=1, sticky="w", **padding)
 
 top_var = tk.BooleanVar()
-tk.Checkbutton(frame, text="Use --top", variable=top_var).grid(row=7, column=1, sticky="w")
+tk.Checkbutton(additional_frame, text="Use --top", variable=top_var, bg="#ffffff").grid(row=0, column=2, sticky="w", **padding)
 
-tk.Label(frame, text="Custom Ports:").grid(row=8, column=0, sticky="w")
-ports_entry = tk.Entry(frame, width=50)
-ports_entry.grid(row=8, column=1)
+# Custom ports
+tk.Label(additional_frame, text="Custom Ports:", bg="#ffffff").grid(row=1, column=0, sticky="w", **padding)
+ports_entry = tk.Entry(additional_frame, width=50)
+ports_entry.grid(row=1, column=1, columnspan=2, sticky="ew", **padding)
 
-tk.Label(frame, text="cve Collector filename:").grid(row=9, column=0, sticky="w")
-cve_output_name_entry = tk.Entry(frame, width=50)
-cve_output_name_entry.grid(row=9, column=1)
+# CVE settings frame
+cve_frame = tk.LabelFrame(frame, text="CVE Settings", bg="#ffffff", padx=10, pady=5)
+cve_frame.grid(row=6, column=0, columnspan=3, sticky="ew", **padding)
+
+tk.Label(cve_frame, text="CVE Collector filename:", bg="#ffffff").grid(row=0, column=0, sticky="w", **padding)
+cve_output_name_entry = tk.Entry(cve_frame, width=50)
+cve_output_name_entry.grid(row=0, column=1, columnspan=2, sticky="ew", **padding)
+
+# Host discovery settings
+host_frame = tk.LabelFrame(frame, text="Host Discovery", bg="#ffffff", padx=10, pady=5)
+host_frame.grid(row=7, column=0, columnspan=3, sticky="ew", **padding)
 
 nmapsn = tk.BooleanVar(value=True)
-tk.Label(frame, text="nmap host-discovery:").grid(row=10, column=0, sticky="w")
-tk.Checkbutton(frame, text="nmap -sn", variable=nmapsn).grid(row=10, column=1, sticky="w")
+tk.Checkbutton(host_frame, text="Use nmap host discovery (-sn)", variable=nmapsn, bg="#ffffff").grid(row=0, column=0, sticky="w", **padding)
 
-
-tk.Button(frame, text="Run", command=run_script).grid(row=11, column=1, pady=10)
+# Run button with styling
+run_button = tk.Button(frame, text="Run Scan", command=run_script, 
+                      bg="#4CAF50", fg="white", 
+                      font=('Helvetica', 12, 'bold'),
+                      padx=20, pady=10)
+run_button.grid(row=8, column=0, columnspan=3, pady=20)
 
 root.mainloop()

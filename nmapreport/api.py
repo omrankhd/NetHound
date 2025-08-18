@@ -210,7 +210,7 @@ def getCVE(request):
 				res['error'] = result.stderr
 		except Exception as e:
 			res['error'] = str(e)
-		# print("tessssst")
+		
 		# scanfilemd5 = hashlib.md5(str(request.session['scanfile']).encode('utf-8')).hexdigest()
 		# cveproc = os.popen('python3 /opt/nmapdashboard/nmapreport/nmap/cve.py '+request.session['scanfile'])
 		# print(cveproc)

@@ -17,8 +17,26 @@
     </div>
   {% endif %}
 
-  <!-- STATS -->
-  <div class="row">
+ <!-- STATS -->
+<div class="row">
+  {% if path == "/opt/xml" or path == "/opt/xml/" %}
+    <div class="col s12 m6">
+      <div class="card darken-1">
+        <div class="card-content grey darken-3 white-text">
+          <span class="card-title"><i class="fas fa-file-code"></i> {{ tr.foldercount }}</span>
+          <p>XML Files</p>
+        </div>
+      </div>
+    </div>  
+    <div class="col s12 m6">
+      <div class="card darken-1">
+        <div class="card-content grey darken-3 white-text">
+          <span class="card-title"><i class="fas fa-file-code"></i> {{ stats.xmlcount }}</span>
+          <p>XML Files</p>
+        </div>
+      </div>
+    </div>
+  {% else %}
     <div class="col s12 m3">
       <div class="card darken-1">
         <div class="card-content grey darken-3 white-text">
@@ -51,7 +69,8 @@
         </div>
       </div>
     </div>
-  </div>
+  {% endif %}
+</div>
 
   <!-- FILE/FOLDER TABLE -->
   <div class="card wmcard">

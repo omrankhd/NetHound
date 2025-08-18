@@ -131,11 +131,11 @@ async def check_services(hosts):
             if "telnet" in name or port == 23:
                 svc["telnet vulnerability check"] = check_telnet.run_telnet_vuln_scan(ip, port)
             # Check DNS
-            if "domain" in name or port == 53:
+            if "domain"  in name or port == 53 or port == 5353:
                 svc["DNS vulnerability check"] = check_dns.run_dns_vuln_scan(ip)
             if "smtp" in name or port == 25:
                 svc["SMTP vulnerability check"] = check_smtp.run_smtp_vuln_scan(ip, port, timeout=10)   
-            if "smb" in name or port == 445:
+            if "smb" or "netbios" or "microsoft-ds" or "samba" in name or port == 445:
                 svc["SMB vulnerability check"] = check_smb.run_smb_vuln_scan(ip, port, timeout=10)  
             # Query Vulners
             if product and version:

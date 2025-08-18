@@ -697,6 +697,7 @@ def main_index(request, subpath="",filterservice="", filterportid=""):
 	r['tr'] = {}
 	r['stats'] = {'po': 0, 'pc': 0, 'pf': 0}
 	xmlfilescount = 0
+	foldercount = 0
 	jsonfilescount = 0
 	data = [] 
 	collector_info = {}
@@ -753,39 +754,18 @@ def main_index(request, subpath="",filterservice="", filterportid=""):
 		r['stats'] = {'po': 0, 'pc': 0, 'pf': 0}
 		r['tr'] = {}
 		xmlfilescount = 0
-
+		foldercount = 0
 		# for folders 
 		for entry in os.listdir(rpath):
 			full_entry_path = os.path.join(rpath, entry)
 			if os.path.isdir(full_entry_path):
-				# Initialize per-folder port stats
-				folder_portstats = {'po': 0, 'pc': 0, 'pf': 0}
-				folder_hostcount = 0
-
-				for fname in os.listdir(full_entry_path):
-					if fname.endswith('.xml'):
-						xml_path = os.path.join(full_entry_path, fname)
-						try:
-							with open(xml_path, 'r') as f:
-								oo = xmltodict.parse(f.read())
-								nmaprun = oo.get('nmaprun', {})
-								hosts = nmaprun.get('host', [])
-								if isinstance(hosts, list):
-									folder_hostcount += len(hosts)
-								elif isinstance(hosts, dict):
-									folder_hostcount += 1
-						
-							stats = ports_stats(xml_path)
-							folder_portstats['po'] += stats.get('po', 0)
-							folder_portstats['pc'] += stats.get('pc', 0)
-							folder_portstats['pf'] += stats.get('pf', 0)
-						except:
-							continue
+				foldercount += 1 
+				folder_portstats, folder_hostcount = folder_stats_recursive(full_entry_path)
 				if folder_hostcount > 0:
 					href = f'/setscanpath/{os.path.join(subpath, entry)}'  # allow selection
 				else:
 					href = f'/browse/{os.path.join(subpath, entry)}'  # only browse inside
-			
+
 				r['tr'][entry + "/"] = {
 					'filename': os.path.join(subpath, entry),
 					'is_folder': True,
@@ -840,10 +820,43 @@ def main_index(request, subpath="",filterservice="", filterportid=""):
 			}
 
 		r['tr'] = OrderedDict(sorted(r['tr'].items()))
+		r['tr']['foldercount'] = foldercount 
 		r['stats']['xmlcount'] = xmlfilescount
-
+		total_portstats, _ = folder_stats_recursive(rpath)
+		r['stats']['po'] = total_portstats['po']
+		r['stats']['pc'] = total_portstats['pc']
+		r['stats']['pf'] = total_portstats['pf']
 		return render(request, 'nmapreport/browser.html', r)
 
+def folder_stats_recursive(folder_path):
+    portstats = {'po': 0, 'pc': 0, 'pf': 0}
+    hostcount = 0
+    for entry in os.listdir(folder_path):
+        full_entry_path = os.path.join(folder_path, entry)
+        if os.path.isdir(full_entry_path):
+            sub_portstats, sub_hostcount = folder_stats_recursive(full_entry_path)
+            portstats['po'] += sub_portstats['po']
+            portstats['pc'] += sub_portstats['pc']
+            portstats['pf'] += sub_portstats['pf']
+            hostcount += sub_hostcount
+        elif entry.endswith('.xml'):
+            xml_path = os.path.join(folder_path, entry)
+            try:
+                with open(xml_path, 'r') as f:
+                    oo = xmltodict.parse(f.read())
+                    nmaprun = oo.get('nmaprun', {})
+                    hosts = nmaprun.get('host', [])
+                    if isinstance(hosts, list):
+                        hostcount += len(hosts)
+                    elif isinstance(hosts, dict):
+                        hostcount += 1
+                stats = ports_stats(xml_path)
+                portstats['po'] += stats.get('po', 0)
+                portstats['pc'] += stats.get('pc', 0)
+                portstats['pf'] += stats.get('pf', 0)
+            except:
+                continue
+    return portstats, hostcount	
 
 def index(request, filterservice="", filterportid=""):
 	r = {}
@@ -1230,11 +1243,23 @@ def index(request, filterservice="", filterportid=""):
 					
 				}
 				if address in collector_info:
-					r['tr'][address]['ftp_anonymous'] = collector_info[address]['ftp_anonymous']
-					r['tr'][address]['telnet_guest'] = collector_info[address]['telnet_guest']
+					if 'services' in collector_info[address]:
+						r['tr'][address]['services'] = {}
+						for port, service_data in collector_info[address]['services'].items():
+							r['tr'][address]['services'][port] = {
+								'service': service_data.get('service', ''),
+								'product': service_data.get('product', ''),
+								'version': service_data.get('version', ''),
+								'misc': service_data.get('misc', ''),
+								'cves': service_data.get('cves', []),
+								'vulns': service_data.get('vulns', []),
+								'vuln_checks': service_data.get('vuln_checks', [])
+							}
+					else:
+						r['tr'][address]['services'] = {}
 				else:
-					r['tr'][address]['ftp_anonymous'] = False
-					r['tr'][address]['telnet_guest'] = False
+					r['tr'][address]['services'] = {}
+					
 
 				hostindex = (hostindex + 1)
 
