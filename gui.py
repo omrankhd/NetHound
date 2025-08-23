@@ -81,7 +81,6 @@ def run_script():
     print(selected_options)
     options_str = " ".join(f"'{opt}'" for opt in selected_options)
     print(options_str)
-    timeout = timeout_entry.get()
     ports = ports_entry.get().strip()
     use_top = top_var.get()
 
@@ -106,8 +105,6 @@ def run_script():
         cmd += ["-o", output_dir]
     if options_str:
         cmd += ["--options", options_str]
-    if timeout:
-        cmd += ["--timeout", timeout]
     if use_top:
         cmd.append("--top")
     if ports:
@@ -264,17 +261,12 @@ tk.Checkbutton(options_frame, text="-T4 (Aggressive timing)", variable=T4_var, b
 
 
 # Additional options frame
-additional_frame = tk.LabelFrame(frame, text="Additional Settings", bg="#ffffff", padx=10, pady=5)
+additional_frame = tk.LabelFrame(frame, text="Ports Settings", bg="#ffffff", padx=10, pady=5)
 additional_frame.grid(row=5, column=0, columnspan=3, sticky="ew", **padding)
 
-# Timeout and top ports settings
-tk.Label(additional_frame, text="Timeout (seconds):", bg="#ffffff").grid(row=0, column=0, sticky="w", **padding)
-timeout_entry = tk.Entry(additional_frame, width=10)
-timeout_entry.insert(0, "0")
-timeout_entry.grid(row=0, column=1, sticky="w", **padding)
-
+# Top ports settings
 top_var = tk.BooleanVar()
-tk.Checkbutton(additional_frame, text="Use --top", variable=top_var, bg="#ffffff").grid(row=0, column=2, sticky="w", **padding)
+tk.Checkbutton(additional_frame, text="Use Top Ports", variable=top_var, bg="#ffffff").grid(row=0, column=0, sticky="w", **padding)
 
 # Custom ports
 tk.Label(additional_frame, text="Custom Ports:", bg="#ffffff").grid(row=1, column=0, sticky="w", **padding)

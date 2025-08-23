@@ -236,91 +236,7 @@ class SMBVulnerabilityChecker:
             logger.debug(f"Null session check error: {e}")
             return False
     
-    def check_eternal_blue_vulnerable(self) -> bool:
-        """Check for EternalBlue vulnerability (MS17-010)"""
-        try:
-            # This is a detection method, not an exploit
-            # Send a specially crafted SMB packet to detect the vulnerability
-            
-            # SMB1 negotiate request
-            negotiate_packet = (
-                b'\x00\x00\x00\x54'  # NetBIOS Session Service
-                b'\xff\x53\x4d\x42'  # SMB1 signature
-                b'\x72'              # SMB_COM_NEGOTIATE
-                b'\x00\x00\x00\x00' # Flags
-                b'\x18\x53\xc0\x00' # Flags2
-                b'\x00\x00'         # Process ID High
-                b'\x00\x00\x00\x00\x00\x00\x00\x00' # Signature
-                b'\x00\x00'         # Reserved
-                b'\x00\x00'         # Tree ID
-                b'\xff\xfe'         # Process ID
-                b'\x00\x00'         # User ID
-                b'\x00\x00'         # Multiplex ID
-                b'\x00'             # Word Count
-                b'\x35\x00'         # Byte Count
-                b'\x00\x02\x4c\x41\x4e\x4d\x41\x4e\x31\x2e\x30\x00' # Dialect: LANMAN1.0
-                b'\x02\x4c\x4d\x31\x2e\x32\x58\x30\x30\x32\x00'     # Dialect: LM1.2X002
-                b'\x02\x4e\x54\x20\x4c\x41\x4e\x4d\x41\x4e\x20\x31\x2e\x30\x00' # Dialect: NT LANMAN 1.0
-                b'\x02\x4e\x54\x20\x4c\x4d\x20\x30\x2e\x31\x32\x00' # Dialect: NT LM 0.12
-            )
-            
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(self.timeout)
-            sock.connect((self.host, self.port))
-            sock.send(negotiate_packet)
-            
-            response = sock.recv(1024)
-            
-            if response and len(response) > 36:
-                # Check for specific response patterns that indicate vulnerability
-                # This is a simplified check - real detection would be more comprehensive
-                dialect_index = struct.unpack('<H', response[37:39])[0]
-                if dialect_index == 0xffff:
-                    sock.close()
-                    return False
-                
-                # Send Trans2 Secondary packet to test for vulnerability
-                trans2_packet = (
-                    b'\x00\x00\x00\x4c'  # NetBIOS Session Service
-                    b'\xff\x53\x4d\x42'  # SMB1 signature
-                    b'\x33'              # SMB_COM_TRANSACTION2_SECONDARY
-                    b'\x00\x00\x00\x00' # Flags
-                    b'\x18\x07\xc0\x00' # Flags2
-                    b'\x00\x00'         # Process ID High
-                    b'\x00\x00\x00\x00\x00\x00\x00\x00' # Signature
-                    b'\x00\x00'         # Reserved
-                    b'\x00\x00'         # Tree ID
-                    b'\xff\xfe'         # Process ID
-                    b'\x00\x00'         # User ID
-                    b'\x00\x00'         # Multiplex ID
-                    b'\x09'             # Word Count
-                    b'\x00\x00'         # Total Parameter Count
-                    b'\x00\x00'         # Total Data Count
-                    b'\x00\x00'         # Parameter Count
-                    b'\x4c\x00'         # Parameter Offset
-                    b'\x02\x00'         # Parameter Displacement
-                    b'\x00\x00'         # Data Count
-                    b'\x00\x00'         # Data Offset
-                    b'\x00\x00'         # Data Displacement
-                    b'\x00\x00'         # Byte Count
-                )
-                
-                sock.send(trans2_packet)
-                vuln_response = sock.recv(1024)
-                
-                sock.close()
-                
-                # Check for vulnerability indicators in response
-                if vuln_response and len(vuln_response) > 8:
-                    status = struct.unpack('<I', vuln_response[5:9])[0]
-                    # STATUS_INSUFF_SERVER_RESOURCES indicates potential vulnerability
-                    return status == 0xc0000205
-            
-            sock.close()
-            return False
-        except Exception as e:
-            logger.debug(f"EternalBlue check error: {e}")
-            return False
+    
     
     def check_guest_access(self) -> bool:
         """Check if guest account access is enabled"""
@@ -424,7 +340,6 @@ class SMBVulnerabilityChecker:
         self.results['smb_versions'] = self.check_smb_versions()
         self.results['smb_signing'] = self.check_smb_signing()
         self.results['null_session'] = self.check_null_session()
-        self.results['eternal_blue'] = self.check_eternal_blue_vulnerable()
         self.results['guest_access'] = self.check_guest_access()
         self.results['common_shares'] = self.enumerate_shares()
         
@@ -456,10 +371,6 @@ class SMBVulnerabilityChecker:
         report += "CRITICAL VULNERABILITIES:\n"
         critical_found = False
         
-        if self.results.get('eternal_blue'):
-            report += "❌ ETERNALBLUE VULNERABILITY (MS17-010) DETECTED\n"
-            report += "   This is a critical vulnerability that allows remote code execution\n"
-            critical_found = True
         
         if self.results.get('null_session'):
             report += "❌ NULL SESSION AUTHENTICATION ALLOWED\n"
@@ -506,8 +417,7 @@ class SMBVulnerabilityChecker:
         if self.results.get('guest_access'):
             report += "• Disable guest account access\n"
         
-        if self.results.get('eternal_blue'):
-            report += "• Apply MS17-010 security update immediately\n"
+        
         
         if self.results.get('null_session'):
             report += "• Disable anonymous/null session access\n"
@@ -550,7 +460,7 @@ def main():
     print(report)
     
     # Return appropriate exit code based on findings
-    if results.get('eternal_blue') or results.get('null_session'):
+    if  results.get('null_session'):
         sys.exit(2)  # Critical vulnerability found
     elif results.get('smb_versions', {}).get('SMB1') or results.get('guest_access'):
         sys.exit(1)  # Security concerns found

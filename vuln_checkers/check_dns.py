@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-"""
-DNS Security Vulnerability Scanner
-A tool for testing DNS servers for common security vulnerabilities
-"""
 
 import socket
 import dns.resolver
@@ -242,9 +238,7 @@ class DNSVulnerabilityScanner:
         return self.results
 
 def run_dns_vuln_scan(server, timeout=5):
-    """
-    Run all DNS vulnerability tests for the given server and return the results as a dict.
-    """
+    print(sys.executable)
     scanner = DNSVulnerabilityScanner(server, timeout)
     return scanner.run_all_tests()
 

@@ -1,15 +1,11 @@
 import xml.etree.ElementTree as ET
-import ftplib
 import asyncio
 import argparse
 import json
 import requests
-import dns.message
-import dns.query
 from vuln_checkers import check_ftp, check_dns, check_smtp, check_smb,check_telnet,checkservice3
 from time import sleep
 from pathlib import Path
-import pprint
 from vuln_checkers.vulnerability_scanner import MultiSourceVulnerabilityScanner
 
 
@@ -46,13 +42,7 @@ def parse_nmap_xml(xml_file):
         results.append({"ip": ip, "services": services})
     return results
 
-def check_Dns(ip,port, test_domain="example.com"):
-    try:
-        q = dns.message.make_query(test_domain, dns.rdatatype.A)
-        r = dns.query.udp(q, ip, timeout=2,port=port)
-        return bool(r.answer)
-    except Exception:
-        return False
+
 
 def query_vulners(product, version):
     url = "https://vulners.com/api/v3/search/lucene/"
@@ -68,14 +58,14 @@ def query_vulners(product, version):
             data = response.json()
             # pprint.pprint(data)
             cves = set()
-            # Lucene endpoint
+            
             if data.get('result') == 'OK' and 'documents' in data.get('data', {}):
                 for doc in data['data']['documents']:
                     if 'cvelist' in doc and doc['cvelist']:
                         cves.update(doc['cvelist'])
                     elif 'id' in doc and doc['id'].startswith('CVE-'):
                         cves.add(doc['id'])
-            # Burp/software or other endpoint
+            
             elif data.get('result') == 'OK' and 'search' in data.get('data', {}):
                 for doc in data['data']['search']:
                     cvelist = doc.get('_source', {}).get('cvelist', [])
@@ -115,11 +105,15 @@ async def check_services(hosts):
                 
                 if product == "Unknown":
                     product = svc.get("service", "")
+
+                if version =="Unkown":
+                    version = result.get("version", None)
+                    svc.update({"version": version})
                 
-                if not version and result:
-                    version = result.get("version", "")
-                    if version:
-                        svc.update({"version": version})
+                # if not version and result:
+                #     version = result.get("version", None)
+                #     if version:
+                #         svc.update({"version": version})
             
             print (product)
             print (version)
@@ -146,7 +140,7 @@ async def check_services(hosts):
             else:
                 print(f"Skipping Vulners query for {ip}:{port} - missing product/version")
             
-            svc["vulns"]  = scanner.scan_vulnerabilities(product, version, port)
+            # svc["vulns"]  = scanner.scan_vulnerabilities(product, version, port)
 
             enriched_services.append(svc)
 
