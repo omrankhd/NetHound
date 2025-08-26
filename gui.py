@@ -8,6 +8,7 @@ import time
 import json
 import os
 from ingestor.cvecollector import *
+from nmapreport import  get_ip_and_cidr
 
 
 HISTORY_FILE = "input_history.json"
@@ -29,7 +30,7 @@ def save_history(targets, output_dirs):
     except Exception:
         pass
 
-# History lists for last 5 used inputs
+
 recent_targets, recent_output_dirs = load_history()
 
 def update_history(history_list, value):
@@ -46,7 +47,7 @@ def run_script():
     output_dir_name = output_dir_entry.get().strip()
     cve_output_name= cve_output_name_entry.get().strip()
 
-    # Ensure targets and output directory are not empty
+    # make sure that targets and output directory are not empty
     if not targets:     
         messagebox.showerror("Input Error", "Targets field cannot be empty.")
         return
@@ -55,12 +56,12 @@ def run_script():
         return
 
     if  cve_output_name=="":
-        cve_output_name="output.json"
+        cve_output_name = targets.replace("/", "_")
     if not cve_output_name.endswith('.json'):
         cve_output_name+='.json'
     cve_output = output_dir +"/"+"CVE_"+cve_output_name
     print(cve_output)
-    # Collect selected options into a single quoted string
+    
     selected_options = []
     if sV_var.get():
         selected_options.append("-sV")
@@ -97,7 +98,7 @@ def run_script():
                 messagebox.showerror("Error", f"--nmap-host-discovery requires CIDR notation, but {t} is not a CIDR (e.g., /24)")
                 return
     
-    # Build command
+    
     cmd = [sys.executable, "ingestor/rustIngestor.py"]
     if targets:
         cmd += targets.split()
@@ -113,8 +114,7 @@ def run_script():
         cmd.append("--nmap-host-discovery") 
 
 
-    # Debug: print the command
-    # print("Running command:", " ".join(cmd))
+    
     print (cmd)
     result = subprocess.run(cmd)
 
@@ -132,14 +132,14 @@ def run_script():
     else:
         messagebox.showerror("Error", f"Script failed with return code {result.returncode}")
 
-# GUI layout
 
-# Initialize window
+
+
 root = tk.Tk()
 root.title("RustScan Ingestor GUI")
 root.geometry("900x600")  # Larger size to accommodate all options
 
-# Set window icon
+# Set the icon icon
 try:
     icon_path = "nmapreport/static/logomin.png"
     if os.path.exists(icon_path):
@@ -148,24 +148,24 @@ try:
 except Exception as e:
     print(f"Could not load icon: {e}")
 
-# Configure window minimum size and background
-root.minsize(600, 400)
-root.configure(bg='#f0f0f0')  # Light gray background
 
-# Configure root window to expand properly
+root.minsize(600, 400)
+root.configure(bg='#f0f0f0')  
+
+# Configure to expand properly
 root.grid_rowconfigure(0, weight=1)
 root.grid_columnconfigure(0, weight=1)
 
-# Create main container frame
+#main container frame
 container = tk.Frame(root)
 container.pack(fill="both", expand=True)
 
-# Create a canvas with scrollbar
+#scrollbar
 canvas = tk.Canvas(container, bg='#f0f0f0')
 scrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
 scrollable_frame = tk.Frame(canvas, bg="#ffffff", bd=2, relief=tk.GROOVE)
 
-# Configure scrollable frame to expand horizontally
+
 scrollable_frame.grid_columnconfigure(1, weight=1)
 scrollable_frame.grid_columnconfigure(2, weight=1)
 
@@ -173,65 +173,88 @@ scrollable_frame.grid_columnconfigure(2, weight=1)
 canvas.configure(yscrollcommand=scrollbar.set)
 canvas.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
 
-# Pack the scrollbar and canvas
+
 scrollbar.pack(side="right", fill="y")
 canvas.pack(side="left", fill="both", expand=True, padx=20, pady=20)
 
-# Make sure the frame expands to the canvas width
+
 scrollable_frame.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
 canvas.bind('<Configure>', lambda e: canvas.itemconfig(canvas_frame, width=e.width-40))
 
-# Create a window in the canvas for the frame
+
 canvas_frame = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
 
-# Update scroll region when the frame size changes
+
 def configure_scroll_region(event):
     canvas.configure(scrollregion=canvas.bbox("all"))
 
 def configure_frame_width(event):
     canvas.itemconfig(canvas_frame, width=event.width)  # 40 is for padding
 
-# Bind events
+
 scrollable_frame.bind("<Configure>", configure_scroll_region)
 canvas.bind("<Configure>", configure_frame_width)
 
-# Enable mousewheel scrolling
+
 def on_mousewheel(event):
     if event.num == 5 or event.delta < 0:
         canvas.yview_scroll(1, "units")
     elif event.num == 4 or event.delta > 0:
         canvas.yview_scroll(-1, "units")
 
-# Bind mouse wheel for different platforms
+
 canvas.bind_all("<MouseWheel>", on_mousewheel)  # Windows and MacOS
 canvas.bind_all("<Button-4>", on_mousewheel)    # Linux
 canvas.bind_all("<Button-5>", on_mousewheel)    # Linux
 
-# Bind scrolling when mouse is over the scrollbar
+
 scrollbar.bind("<MouseWheel>", on_mousewheel)
 scrollbar.bind("<Button-4>", on_mousewheel)
 scrollbar.bind("<Button-5>", on_mousewheel)
 
-# Main frame is now scrollable_frame
+
 frame = scrollable_frame
 
-# Add padding around all widgets
+
 padding = {'padx': 10, 'pady': 5}
 
-# Title label with custom font
+# Title label
 title_label = tk.Label(frame, text="RustScan Ingestor", font=('Helvetica', 16, 'bold'), bg="#ffffff")
 title_label.grid(row=0, column=0, columnspan=3, pady=15)
 
-# GUI Widgets with padding
-tk.Label(frame, text="Targets (space-separated):", bg="#ffffff").grid(row=1, column=0, sticky="w", **padding)
-target_entry = ttk.Combobox(frame, width=70, values=recent_targets)
-target_entry.grid(row=1, column=1, columnspan=2, sticky="ew", **padding)
 
-tk.Label(frame, text="Output Directory:", bg="#ffffff").grid(row=2, column=0, sticky="w", **padding)
-output_dir_entry = ttk.Combobox(frame, width=70, values=recent_output_dirs)
+# Create targets frame
+targets_frame = tk.LabelFrame(frame, text="Target Settings", bg="#ffffff", padx=10, pady=5)
+targets_frame.grid(row=1, column=0, columnspan=3, sticky="ew", **padding)
+
+# Target input
+tk.Label(targets_frame, text="Targets (space-separated):", bg="#ffffff").grid(row=0, column=0, sticky="w", **padding)
+target_entry = ttk.Combobox(targets_frame, width=70, values=recent_targets)
+cidr = get_ip_and_cidr.get_local_cidr()
+placeholder = cidr
+target_entry.insert(0, placeholder)
+
+def on_target_entry_focus_in(event):
+    if target_entry.get() == placeholder:
+        target_entry.delete(0, tk.END)
+        
+def on_target_entry_focus_out(event):
+    if not target_entry.get():
+        target_entry.insert(0, placeholder)
+
+target_entry.bind('<FocusIn>', on_target_entry_focus_in)
+target_entry.bind('<FocusOut>', on_target_entry_focus_out)
+target_entry.grid(row=0, column=1, columnspan=2, sticky="ew", **padding)
+
+# Host discovery option in targets frame
+nmapsn = tk.BooleanVar(value=True)
+tk.Checkbutton(targets_frame, text="Use nmap host discovery (-sn)", variable=nmapsn, bg="#ffffff").grid(row=1, column=0, columnspan=3, sticky="w", **padding)
+
+tk.Label(targets_frame, text="Output Directory:", bg="#ffffff").grid(row=2, column=0, sticky="w", **padding)
+output_dir_entry = ttk.Combobox(targets_frame, width=70, values=recent_output_dirs)
 output_dir_entry.grid(row=2, column=1, columnspan=2, sticky="ew", **padding)
 
-# Add a separator
+
 ttk.Separator(frame, orient='horizontal').grid(row=3, column=0, columnspan=3, sticky="ew", pady=10)
 
 # Scan Options section with a frame
@@ -240,13 +263,13 @@ options_frame.grid(row=4, column=0, columnspan=3, sticky="ew", **padding)
 
 # Create variables for checkboxes
 sV_var = tk.BooleanVar(value=True)  # Version detection
-sS_var = tk.BooleanVar()  # SYN scan
-sT_var = tk.BooleanVar()  # TCP connect scan
-sU_var = tk.BooleanVar()  # UDP scan
-A_var = tk.BooleanVar()   # Aggressive scan
-O_var = tk.BooleanVar()   # OS detection
-Pn_var = tk.BooleanVar()  # No ping
-T4_var = tk.BooleanVar()  # Timing template 4
+sS_var = tk.BooleanVar()  
+sT_var = tk.BooleanVar()  
+sU_var = tk.BooleanVar()  
+A_var = tk.BooleanVar()   
+O_var = tk.BooleanVar()   
+Pn_var = tk.BooleanVar()  
+T4_var = tk.BooleanVar()  
 
 # Create and position checkboxes in two columns inside options_frame
 tk.Checkbutton(options_frame, text="-sV (Version detection)", variable=sV_var, bg="#ffffff").grid(row=0, column=0, sticky="w", padx=5)
@@ -273,26 +296,21 @@ tk.Label(additional_frame, text="Custom Ports:", bg="#ffffff").grid(row=1, colum
 ports_entry = tk.Entry(additional_frame, width=50)
 ports_entry.grid(row=1, column=1, columnspan=2, sticky="ew", **padding)
 
+""" uncomment to choose cve output file name"""
 # CVE settings frame
-cve_frame = tk.LabelFrame(frame, text="CVE Settings", bg="#ffffff", padx=10, pady=5)
-cve_frame.grid(row=6, column=0, columnspan=3, sticky="ew", **padding)
+# cve_frame = tk.LabelFrame(frame, text="CVE Settings", bg="#ffffff", padx=10, pady=5)
+# cve_frame.grid(row=6, column=0, columnspan=3, sticky="ew", **padding)
 
-tk.Label(cve_frame, text="CVE Collector filename:", bg="#ffffff").grid(row=0, column=0, sticky="w", **padding)
-cve_output_name_entry = tk.Entry(cve_frame, width=50)
-cve_output_name_entry.grid(row=0, column=1, columnspan=2, sticky="ew", **padding)
-
-# Host discovery settings
-host_frame = tk.LabelFrame(frame, text="Host Discovery", bg="#ffffff", padx=10, pady=5)
-host_frame.grid(row=7, column=0, columnspan=3, sticky="ew", **padding)
-
-nmapsn = tk.BooleanVar(value=True)
-tk.Checkbutton(host_frame, text="Use nmap host discovery (-sn)", variable=nmapsn, bg="#ffffff").grid(row=0, column=0, sticky="w", **padding)
+# tk.Label(cve_frame, text="CVE Collector filename:", bg="#ffffff").grid(row=0, column=0, sticky="w", **padding)
+cve_output_name_entry = tk.Entry(frame, width=50)
+# cve_output_name_entry.grid(row=0, column=1, columnspan=2, sticky="ew", **padding)
+cve_output_name_entry.insert(0, "")
 
 # Run button with styling
 run_button = tk.Button(frame, text="Run Scan", command=run_script, 
                       bg="#4CAF50", fg="white", 
                       font=('Helvetica', 12, 'bold'),
                       padx=20, pady=10)
-run_button.grid(row=8, column=0, columnspan=3, pady=20)
+run_button.grid(row=7, column=0, columnspan=3, pady=20)
 
 root.mainloop()

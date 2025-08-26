@@ -1,4 +1,60 @@
 import xmltodict, json, html, os, hashlib, re, urllib.parse, base64
+import socket
+import platform
+import subprocess
+from typing import Optional
+
+def get_machine_ip() -> Optional[str]:
+    """
+    Get the IP address of the current machine, works on both Windows and Linux.
+    Returns the primary IP address or None if it cannot be determined.
+    """
+    try:
+        # First try to determine the operating system
+        system = platform.system().lower()
+        
+        if system == 'windows':
+            # For Windows, use socket to get hostname and then get IP
+            hostname = socket.gethostname()
+            ip = socket.gethostbyname(hostname)
+            return ip
+        
+        elif system == 'linux':
+            # For Linux, try multiple methods
+            
+            # Method 1: Using hostname command
+            try:
+                ip = subprocess.check_output(['hostname', '-I']).decode().strip().split()[0]
+                return ip
+            except (subprocess.SubprocessError, IndexError):
+                pass
+            
+            # Method 2: Using ip command
+            try:
+                cmd = "ip -4 addr show | grep -oP '(?<=inet\\s)\\d+(\\.\\d+){3}' | grep -v '127.0.0.1' | head -n 1"
+                ip = subprocess.check_output(cmd, shell=True).decode().strip()
+                return ip
+            except subprocess.SubprocessError:
+                pass
+            
+            # Method 3: Using socket as fallback
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                s.connect(('8.8.8.8', 80))  # Connect to Google DNS to get local IP
+                ip = s.getsockname()[0]
+                s.close()
+                return ip
+            except socket.error:
+                pass
+        
+        # If all methods fail, try basic socket method as last resort
+        hostname = socket.gethostname()
+        ip = socket.gethostbyname(hostname)
+        return ip
+        
+    except Exception as e:
+        print(f"Error getting IP address: {e}")
+        return None
 
 def token_check(token):
 	tokenhash = open('/root/token.sha256').read().strip()
@@ -339,11 +395,11 @@ def find_json_upward(start_path, stop_path="/opt/xml"):
 					return os.path.join(current_path, fname)
 
 			if current_path == stop_path:
-				break  # Reached the top-level search limit
+				break 
 
 			parent = os.path.dirname(current_path)
 			if parent == current_path:
-				break  # Prevent infinite loop if something goes wrong
+				break  # Prevent infinite loop 
 
 			current_path = parent
 
@@ -392,3 +448,4 @@ def load_collector_info(start_path):
         print(f"Warning: could not load collector info from {json_path}: {e}")
 
     return collector_info
+
