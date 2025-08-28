@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from tkinter import ttk
@@ -43,18 +45,20 @@ def update_history(history_list, value):
 def run_script():
     start_time = time.time()
     targets = target_entry.get().strip()
-    output_dir =  os.path.join("/opt/xml/",output_dir_entry.get().strip())
-    output_dir_name = output_dir_entry.get().strip()
-    cve_output_name= cve_output_name_entry.get().strip()
-
-    # make sure that targets and output directory are not empty
+    output_dir_input = output_dir_entry.get().strip()
     if not targets:     
         messagebox.showerror("Input Error", "Targets field cannot be empty.")
         return
-    if not output_dir:
+    if not output_dir_input:
         messagebox.showerror("Input Error", "Output Directory field cannot be empty.")
         return
+    
+    output_dir_clean = output_dir_input.strip("/").replace("../", "").replace("..\\", "")
+    output_dir_clean = output_dir_clean.replace("opt/xml/", "").replace("opt\\xml\\", "")
+    output_dir = os.path.join("/opt/xml", output_dir_clean)
+    output_dir_name = output_dir_clean
 
+    cve_output_name = cve_output_name_entry.get().strip()
     if  cve_output_name=="":
         cve_output_name = targets.replace("/", "_")
     if not cve_output_name.endswith('.json'):
@@ -231,7 +235,11 @@ targets_frame.grid(row=1, column=0, columnspan=3, sticky="ew", **padding)
 tk.Label(targets_frame, text="Targets (space-separated):", bg="#ffffff").grid(row=0, column=0, sticky="w", **padding)
 target_entry = ttk.Combobox(targets_frame, width=70, values=recent_targets)
 cidr = get_ip_and_cidr.get_local_cidr()
-placeholder = cidr
+if cidr:
+    placeholder = cidr
+else:
+    placeholder="192.168.1.0/24"
+    
 target_entry.insert(0, placeholder)
 
 def on_target_entry_focus_in(event):
