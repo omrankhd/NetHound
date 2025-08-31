@@ -1409,6 +1409,592 @@ def index(request, filterservice="", filterportid=""):
 	r['cpestring'] = ' <input type="hidden" id="cpestring" value="'+urllib.parse.quote_plus(base64.b64encode(json.dumps(cpedict).encode()))+'" /> '
 
 	return render(request, 'nmapreport/nmap_hostdetails.html', r)
+# def index(request, filterservice="", filterportid=""):
+#     r = {}
+
+#     if 'auth' not in request.session:
+#         return render(request, 'nmapreport/nmap_auth.html', r)
+#     else:
+#         r['auth'] = True
+
+#     if 'scanfile' in request.session:
+#         oo = xmltodict.parse(open('/opt/xml/'+request.session['scanfile'], 'r').read())
+#         r['out2'] = json.dumps(oo['nmaprun'], indent=4)
+#         o = json.loads(r['out2'])
+#         meta = {
+#             'startstr': oo['nmaprun'].get('@startstr', 'Unknown'),
+#             'version': oo['nmaprun'].get('@version', 'Unknown'),
+#             'args': oo['nmaprun'].get('@args', ''),
+#             'xmlver': oo['nmaprun'].get('@xmloutputversion', ''),
+#             'scantype': '',
+#             'protocol': ''
+#         }
+
+#         scaninfo = oo['nmaprun'].get('scaninfo')
+#         if isinstance(scaninfo, dict):
+#             meta['scantype'] = scaninfo.get('@type', '')
+#             meta['protocol'] = scaninfo.get('@protocol', '')
+#         elif isinstance(scaninfo, list):
+#             meta['scantype'] = ', '.join(s.get('@type', '') for s in scaninfo)
+#             meta['protocol'] = ', '.join(s.get('@protocol', '') for s in scaninfo)
+
+#         hosts = o.get('host', [])
+#         if isinstance(hosts, dict):
+#             hosts = [hosts]
+#         o['host'] = hosts
+#         o['_metadata_per_host'] = [meta] * len(hosts)
+
+#         scanmd5 = hashlib.md5(str(request.session['scanfile']).encode('utf-8')).hexdigest()
+#         r['scanfile'] = html.escape(str(request.session['scanfile']))
+#         r['scanmd5'] = scanmd5
+
+#     elif 'scanfolder' in request.session:
+#         folder_path = os.path.join('/opt/xml', request.session['scanfolder'])
+#         host_list = []
+#         metadata_per_host = []
+
+#         for filename in os.listdir(folder_path):
+#             if filename.endswith('.xml'):
+#                 full_path = os.path.join(folder_path, filename)
+#                 with open(full_path, 'r') as f:
+#                     oo = xmltodict.parse(f.read())
+#                     nmaprun = oo['nmaprun']
+
+#                     meta = {
+#                         'startstr': nmaprun.get('@startstr', 'Unknown'),
+#                         'version': nmaprun.get('@version', 'Unknown'),
+#                         'args': nmaprun.get('@args', 'Unknown'),
+#                         'xmlver': nmaprun.get('@xmloutputversion', 'Unknown'),
+#                         'scantype': '',
+#                         'protocol': ''
+#                     }
+
+#                     if 'scaninfo' in nmaprun:
+#                         if isinstance(nmaprun['scaninfo'], dict):
+#                             meta['scantype'] = nmaprun['scaninfo'].get('@type', '')
+#                             meta['protocol'] = nmaprun['scaninfo'].get('@protocol', '')
+#                         elif isinstance(nmaprun['scaninfo'], list):
+#                             meta['scantype'] = ', '.join(si.get('@type', '') for si in nmaprun['scaninfo'])
+#                             meta['protocol'] = ', '.join(si.get('@protocol', '') for si in nmaprun['scaninfo'])
+
+#                     hosts = nmaprun.get('host', [])
+#                     if isinstance(hosts, dict):
+#                         hosts = [hosts]
+#                     for h in hosts:
+#                         host_list.append(h)
+#                         metadata_per_host.append(meta)
+
+#         o = {'host': host_list, '_metadata_per_host': metadata_per_host}
+#         scanmd5 = hashlib.md5(request.session['scanfolder'].encode('utf-8')).hexdigest()
+#         r['scanfile'] = html.escape(str(request.session['scanfolder']))
+#         r['scanmd5'] = scanmd5
+
+#     xml_base = "/opt/xml"
+#     selected_file = request.session.get("scanfile")
+#     selected_folder = request.session.get("scanfolder")
+
+#     if selected_file:
+#         start_path = os.path.join(xml_base, selected_file)
+#         if os.path.isfile(start_path):
+#             search_start = os.path.dirname(start_path)
+#         else:
+#             search_start = start_path
+#     elif selected_folder:
+#         search_start = os.path.join(xml_base, selected_folder)
+#     else:
+#         search_start = xml_base
+
+#     collector_info = load_collector_info(search_start)
+
+#     labelhost = {}
+#     labelfiles = os.listdir('/opt/notes')
+#     for lf in labelfiles:
+#         m = re.match('^('+scanmd5+')_([a-z0-9]{32,32})\.host\.label$', lf)
+#         if m is not None:
+#             if m.group(1) not in labelhost:
+#                 labelhost[m.group(1)] = {}
+#             labelhost[m.group(1)][m.group(2)] = open('/opt/notes/'+lf, 'r').read()
+
+#     noteshost = {}
+#     notesfiles = os.listdir('/opt/notes')
+#     for nf in notesfiles:
+#         m = re.match('^('+scanmd5+')_([a-z0-9]{32,32})\.notes$', nf)
+#         if m is not None:
+#             if m.group(1) not in noteshost:
+#                 noteshost[m.group(1)] = {}
+#             noteshost[m.group(1)][m.group(2)] = open('/opt/notes/'+nf, 'r').read()
+
+#     cvehost = get_cve(scanmd5)
+
+#     # Initialize tracking variables
+#     hostsup = 0
+#     hostindex = 1
+#     ports = {'open': 0, 'closed': 0, 'filtered': 0}
+#     allostypelist, sscount, picount, cpe = {}, {}, {}, {}
+    
+#     # NEW: Initialize data structures for the template
+#     scan_hosts = []
+#     network_cves = {
+#         'critical': [],
+#         'high': [],
+#         'medium': [],
+#         'low': []
+#     }
+#     network_stats = {
+#         'total_critical': 0,
+#         'total_high': 0,
+#         'total_medium': 0,
+#         'exploited_wild': 0
+#     }
+
+#     r['tr'] = {}
+#     r['stats'] = {}
+
+#     for meta_index, ik in enumerate(o['host']):
+#         i = ik if isinstance(ik, dict) else o['host']
+#         metadata_list = o.get('_metadata_per_host')
+#         if metadata_list and meta_index < len(metadata_list):
+#             host_meta = metadata_list[meta_index]
+#         else:
+#             host_meta = {
+#                 'startstr': 'Unknown',
+#                 'version': '',
+#                 'args': '',
+#                 'xmlver': '',
+#                 'scantype': '',
+#                 'protocol': ''
+#             }
+
+#         hostname = ''
+#         if 'hostnames' in i and type(i['hostnames']) is dict:
+#             if 'hostname' in i['hostnames']:
+#                 if type(i['hostnames']['hostname']) is list:
+#                     for hi in i['hostnames']['hostname']:
+#                         hostname += '<div class="small grey-text"><b>'+hi['@type']+':</b> '+hi['@name']+'</div>'
+#                 else:
+#                     hostname += '<div class="small grey-text"><b>'+i['hostnames']['hostname']['@type']+':</b> '+i['hostnames']['hostname']['@name']+'</div>'
+
+#         po, pc, pf = 0, 0, 0
+#         ss, pp, ost = {}, {}, {}
+#         lastportid = 0
+
+#         if '@addr' in i['address']:
+#             address = i['address']['@addr']
+#         elif type(i['address']) is list:
+#             for ai in i['address']:
+#                 if ai['@addrtype'] == 'ipv4':
+#                     address = ai['@addr']
+
+#         addressmd5 = hashlib.md5(str(address).encode('utf-8')).hexdigest()
+
+#         # NEW: Initialize host data structure
+#         host_data = {
+#             'ip': address,
+#             'hostname': hostname,
+#             'services': [],
+#             'total_critical': 0,
+#             'total_high': 0,
+#             'total_medium': 0,
+#             'total_low': 0
+#         }
+
+#         if i['status']['@state'] == 'up':
+#             if address not in cpe:
+#                 hostsup = (hostsup + 1)
+
+#                 r['tr'][address] = {
+#                     'hostindex': '',
+#                     'hostname': hostname,
+#                     'po': 0,
+#                     'pc': 0,
+#                     'pf': 0,
+#                     'totports': str(0),
+#                     'addressmd5': addressmd5
+#                 }
+
+#         cpe[address] = {}
+
+#         striggered = False
+#         e = ''
+#         if 'ports' in i and 'port' in i['ports']:
+#             for pobj in i['ports']['port']:
+#                 if type(pobj) is dict:
+#                     p = pobj
+#                 else:
+#                     p = i['ports']['port']
+
+#                 if lastportid == p['@portid']:
+#                     continue
+#                 else:
+#                     lastportid = p['@portid']
+
+#                 if 'service' in p:
+#                     if filterservice != "" and p['service']['@name'] == filterservice:
+#                         striggered = True
+#                     if filterportid != "" and p['@portid'] == filterportid:
+#                         striggered = True
+
+#                 pp[p['@portid']] = p['@portid']
+
+#                 # NEW: Build service data for template
+#                 service_data = {
+#                     'port': p['@portid'],
+#                     'protocol': p['@protocol'],
+#                     'state': p['state']['@state'],
+#                     'service': 'Unknown',
+#                     'product': 'Unknown',
+#                     'version': '',
+#                     'confidence': '',
+#                     'vulnerabilities': [],
+#                     'vulnerability_count': 0,
+#                     'critical_count': 0,
+#                     'high_count': 0,
+#                     'medium_count': 0,
+#                     'exploited_vulns': 0,
+#                     'cves': [],
+#                     'misc_info': [],
+#                     'dns_check': None,
+#                     'smb_check': None
+#                 }
+
+#                 if 'service' in p:
+#                     service_info = p['service']
+#                     service_data.update({
+#                         'service': service_info.get('@name', 'Unknown'),
+#                         'product': service_info.get('@product', 'Unknown'),
+#                         'version': service_info.get('@version', ''),
+#                         'confidence': service_info.get('@conf', ''),
+#                     })
+
+#                     ss[service_info['@name']] = service_info['@name']
+
+#                     if '@extrainfo' in service_info:
+#                         e = service_info['@extrainfo']
+#                         service_data['misc_info'].append({
+#                             'confidence': service_data['confidence'],
+#                             'details': [{'key': 'Extra Info', 'value': e}]
+#                         })
+
+#                     # Handle CPE data
+#                     if 'cpe' in service_info:
+#                         if type(service_info['cpe']) is list:
+#                             for cpei in service_info['cpe']:
+#                                 cpe[address][cpei] = cpei
+#                         else:
+#                             cpe[address][service_info['cpe']] = service_info['cpe']
+
+#                     if '@ostype' in service_info:
+#                         if service_info['@ostype'] in allostypelist:
+#                             allostypelist[service_info['@ostype']] = (allostypelist[service_info['@ostype']] + 1)
+#                         else:
+#                             allostypelist[service_info['@ostype']] = 1
+#                         ost[service_info['@ostype']] = service_info['@ostype']
+
+#                     if service_info['@name'] in sscount:
+#                         sscount[service_info['@name']] = (sscount[service_info['@name']] + 1)
+#                     else:
+#                         sscount[service_info['@name']] = 1
+
+#                 # NEW: Get vulnerability data from collector_info
+#                 if address in collector_info and 'services' in collector_info[address]:
+#                     if p['@portid'] in collector_info[address]['services']:
+#                         collector_service = collector_info[address]['services'][p['@portid']]
+                        
+#                         # Process vulnerabilities
+#                         if 'vulns' in collector_service:
+#                             for vuln in collector_service['vulns']:
+#                                 vuln_data = {
+#                                     'id': vuln.get('id', 'Unknown'),
+#                                     'severity': vuln.get('severity', 'UNKNOWN'),
+#                                     'cvss_score': vuln.get('cvss_score', 'N/A'),
+#                                     'description': vuln.get('description', 'No description available'),
+#                                     'published_date': vuln.get('published_date', 'Unknown'),
+#                                     'source': vuln.get('source', 'Unknown'),
+#                                     'due_date': vuln.get('due_date', ''),
+#                                     'cvss_vector': vuln.get('cvss_vector', ''),
+#                                     'required_action': vuln.get('required_action', ''),
+#                                     'exploited_in_wild': vuln.get('exploited_in_wild', False),
+#                                     'references': vuln.get('references', [])
+#                                 }
+#                                 service_data['vulnerabilities'].append(vuln_data)
+                                
+#                                 # Count vulnerabilities by severity
+#                                 severity = vuln.get('severity', '').upper()
+#                                 if severity == 'CRITICAL':
+#                                     service_data['critical_count'] += 1
+#                                     host_data['total_critical'] += 1
+#                                     network_stats['total_critical'] += 1
+#                                 elif severity == 'HIGH':
+#                                     service_data['high_count'] += 1
+#                                     host_data['total_high'] += 1
+#                                     network_stats['total_high'] += 1
+#                                 elif severity == 'MEDIUM':
+#                                     service_data['medium_count'] += 1
+#                                     host_data['total_medium'] += 1
+#                                     network_stats['total_medium'] += 1
+#                                 else:
+#                                     host_data['total_low'] += 1
+                                
+#                                 if vuln.get('exploited_in_wild', False):
+#                                     service_data['exploited_vulns'] += 1
+#                                     network_stats['exploited_wild'] += 1
+                                
+#                                 # Add to network CVE summary
+#                                 if severity in ['CRITICAL', 'HIGH', 'MEDIUM']:
+#                                     network_cves[severity.lower()].append({
+#                                         'id': vuln.get('id', 'Unknown'),
+#                                         'title': vuln.get('description', 'No description')[:50],
+#                                         'exploited_in_wild': vuln.get('exploited_in_wild', False)
+#                                     })
+
+#                         # Process CVEs
+#                         if 'cves' in collector_service:
+#                             service_data['cves'] = collector_service['cves']
+
+#                         # Add protocol-specific checks
+#                         if service_data['service'].lower() == 'domain':
+#                             service_data['dns_check'] = {
+#                                 'open_recursion': False,  # You can implement actual checks here
+#                                 'zone_transfer': False
+#                             }
+#                         elif service_data['service'].lower() in ['netbios-ssn', 'microsoft-ds']:
+#                             service_data['smb_check'] = {
+#                                 'null_session': False,  # You can implement actual checks here
+#                                 'eternal_blue': False
+#                             }
+
+#                 service_data['vulnerability_count'] = len(service_data['vulnerabilities'])
+
+#                 if p['@portid'] in picount:
+#                     picount[p['@portid']] = (picount[p['@portid']] + 1)
+#                 else:
+#                     picount[p['@portid']] = 1
+
+#                 if p['state']['@state'] == 'closed':
+#                     ports['closed'] = (ports['closed'] + 1)
+#                     pc = (pc + 1)
+#                 elif p['state']['@state'] == 'open':
+#                     ports['open'] = (ports['open'] + 1)
+#                     po = (po + 1)
+#                 elif p['state']['@state'] == 'filtered':
+#                     ports['filtered'] = (ports['filtered'] + 1)
+#                     pf = (pf + 1)
+
+#                 # Only add services for open ports or if filtering
+#                 if (p['state']['@state'] == 'open' or filterservice != "" or filterportid != ""):
+#                     host_data['services'].append(service_data)
+
+#             # Build legacy data structure (keeping for compatibility)
+#             services = ''
+#             for s in ss:
+#                 if filterservice != ss[s]:
+#                     services += '<a href="/report/service/'+ss[s]+'/">'+ss[s]+'</a>, '
+#                 else:
+#                     services += '<span class="tmlabel" style="background-color:#ffcc00;color:#333;">'+ss[s]+'</span>, '
+
+#             ostype = ''
+#             for oty in ost:
+#                 ostype += '<i class="'+fromOSTypeToFontAwesome(html.escape(ost[oty]))+'"></i> <span class="grey-text small">'+ost[oty].lower()+'</span> '
+
+#             tdports = ''
+#             for kp in pp:
+#                 if filterportid != pp[kp]:
+#                     tdports += '<a href="/report/portid/'+pp[kp]+'/">'+pp[kp]+'</a>, '
+#                 else:
+#                     tdports += '<span class="tmlabel" style="background-color:#ffcc00;color:#333;">'+pp[kp]+'</span>, '
+
+#             # Handle labels and notes (keeping existing logic)
+#             labelout = '<span id="hostlabel'+str(hostindex)+'"></span>'
+#             if scanmd5 in labelhost:
+#                 if addressmd5 in labelhost[scanmd5]:
+#                     labelcolor = labelToColor(labelhost[scanmd5][addressmd5])
+#                     labelmargin = labelToMargin(labelhost[scanmd5][addressmd5])
+#                     labelout = '<span id="hostlabel'+str(hostindex)+'" style="margin-left:'+labelmargin+'" class="rightlabel '+labelcolor+'">'+html.escape(labelhost[scanmd5][addressmd5])+'</span>'
+
+#             notesout = ''
+#             if scanmd5 in noteshost:
+#                 if addressmd5 in noteshost[scanmd5]:
+#                     notesb64 = noteshost[scanmd5][addressmd5]
+#                     notesout = '<a id="noteshost'+str(hostindex)+'" class="grey-text" href="#!" onclick="javascript:openNotes(\''+addressmd5+'\', \''+notesb64+'\');"><i class="fas fa-comment"></i> contains notes</a>'
+
+#             # CVE handling
+#             cveout = ''
+#             cvecount = 0
+#             if scanmd5 in cvehost:
+#                 if addressmd5 in cvehost[scanmd5]:
+#                     cvejson = json.loads(cvehost[scanmd5][addressmd5])
+#                     for ic in cvejson:
+#                         if type(ic) is list:
+#                             listcve = ic
+#                         elif type(ic) is dict:
+#                             listcve = [ic]
+#                         for cvei in listcve:
+#                             if 'id' in cvei:
+#                                 cvecount = (cvecount + 1)
+#                     if cvecount > 0:
+#                         cveout = '<a href="/report/'+address+'" class="grey-text"><i class="fas fa-exclamation-triangle"></i> '+str(cvecount)+' CVE found</a>'
+
+#             if (filterservice != "" and striggered is True) or (filterportid != "" and striggered is True) or (filterservice == "" and filterportid == ""):
+                
+#                 # Build legacy r['tr'] structure
+#                 r['tr'][address] = {
+#                     'hostindex': str(hostindex),
+#                     'hostname': hostname,
+#                     'ostype': ostype,
+#                     'notes': notesout,
+#                     'cve': cveout,
+#                     'po': po,
+#                     'pc': pc,
+#                     'pf': pf,
+#                     'totports': str((po + pf + pc)),
+#                     'services': str(services[0:-2]) if services else '',
+#                     'ports': str(tdports[0:-2]) if tdports else '',
+#                     'addressmd5': addressmd5,
+#                     'labelout': labelout,
+#                     'cvecount': cvecount,
+#                     'startstr': host_meta.get('startstr', 'Unknown'),
+#                     'nmapver': host_meta.get('version', ''),
+#                     'nmapargs': host_meta.get('args', ''),
+#                     'xmlver': host_meta.get('xmlver', ''),
+#                     'scantype': host_meta.get('scantype', ''),
+#                     'protocol': host_meta.get('protocol', ''),
+#                 }
+
+#                 # NEW: Add the host to scan_hosts for the template
+#                 scan_hosts.append(host_data)
+
+#                 hostindex = (hostindex + 1)
+
+#                 if type(ik) is not dict:
+#                     break
+#             else:
+#                 if address in r['tr']:
+#                     del r['tr'][address]
+#         else:
+#             if address in r['tr']:
+#                 del r['tr'][address]
+
+#     # Build stats for charts and summary
+#     totports = (ports['open']+ports['closed']+ports['filtered'])
+#     if filterservice == "" and filterportid == "":
+#         scaninfobox2 = '<canvas id="chart1"></canvas>'
+#         scaninfobox3 = '<canvas id="chart3" height="150"></canvas>'
+#     else:
+#         scaninfobox2 = '<div class="small">'+\
+#         '	<b class="orange-text">Filter port / service:</b> <b>'+html.escape(filterportid+filterservice)+'</b> <a href="/"><i class="fas fa-trash-alt"></i></a><br>'+\
+#         '	<b class="orange-text">Total Ports:</b> '+str(totports)+'<br>'+\
+#         '	<b class="orange-text">Open Ports:</b> '+str(ports['open'])+'<br>'+\
+#         '	<b class="orange-text">Closed Ports:</b> '+str(ports['closed'])+'<br>'+\
+#         '	<b class="orange-text">Filtered Ports:</b> '+str(ports['filtered'])+'</div>'
+#         scaninfobox3 = '<div id="detailstopports"></div>'
+
+#     # Build scan type and protocol info
+#     scantype = ''
+#     if 'scaninfo' in o and '@type' in o['scaninfo']:
+#         scantype = o['scaninfo']['@type']
+#     if 'scaninfo' in o and type(o['scaninfo']) is list:
+#         for sinfo in o['scaninfo']:
+#             scantype += sinfo['@type']+', '
+#         scantype = scantype[0:-2]
+
+#     protocol = ''
+#     if 'scaninfo' in o and '@protocol' in o['scaninfo']:
+#         protocol = o['scaninfo']['@protocol']
+#     if 'scaninfo' in o and type(o['scaninfo']) is list:
+#         for sinfo in o['scaninfo']:
+#             protocol += sinfo['@protocol']+', '
+#         protocol = protocol[0:-2]
+
+#     r['stats'] = {
+#         'scaninfobox2': scaninfobox2,
+#         'scaninfobox3': scaninfobox3,
+#         'scantype': scantype,
+#         'protocol': protocol,
+#         'hostsup': str(hostsup),
+#         'popen': ports['open'],
+#         'pclosed': ports['closed'],
+#         'pfiltered': ports['filtered']
+#     }
+
+#     # Build service and port statistics for legacy charts
+#     allss = ''
+#     allsslabels = ''
+#     allssdata = ''
+#     allssc = 0
+#     for i in sorted(sscount, key=sscount.__getitem__, reverse=True):
+#         if allssc <= 30:
+#             if filterservice != i:
+#                 allss += '<a href="/report/service/'+html.escape(i)+'/">'+html.escape(i)+'('+str(sscount[i])+')</a>, '
+#             else:
+#                 allss += '<span class="tmlabel" style="background-color:#ffcc00;color:#333;">'+html.escape(i)+'</span>, '
+#             allsslabels += '"'+html.escape(i)+'", '
+#             allssdata += ''+str(sscount[i])+','
+#             allssc = (allssc + 1)
+
+#     allpilinks = ''
+#     allpic = 1
+#     for i in sorted(picount, key=picount.__getitem__, reverse=True):
+#         if allpic <= 10:
+#             allpilinks += '<a href="/report/portid/'+str(i)+'/">'+str(i)+'</a>, '
+#             allpic = (allpic + 1)
+
+#     allostypelinks = ''
+#     for i in sorted(allostypelist, key=allostypelist.__getitem__, reverse=True):
+#         allostypelinks += '<a href="">'+str(i)+'</a>, '
+
+#     r['stats']['services'] = allss[0:-2] if allss else ''
+#     r['stats']['portids'] = allpilinks[0:-2] if allpilinks else ''
+#     r['stats']['ostypes'] = allostypelinks[0:-2] if allostypelinks else ''
+
+#     # NEW: Add data structures required by the template
+#     r['scan_hosts'] = scan_hosts
+#     r['network_cves'] = network_cves if any(network_cves.values()) else None
+#     r['network_stats'] = network_stats
+
+#     # Build JavaScript for charts
+#     r['js'] = ''
+#     if filterservice == "" and filterportid == "":
+#         r['js'] += '<script>'+\
+#         '	$(document).ready(function() {'+\
+#         '		var ctx = document.getElementById("chart1").getContext("2d");'+\
+#         '		var myChart = new Chart(ctx, {'+\
+#         '			type: "doughnut", data: {labels:["Open", "Filtered", "Closed"], datasets: [{ data: ['+str(ports['open'])+','+str(ports['filtered'])+','+str(ports['closed'])+'], backgroundColor:["rgba(0,150,0,0.8)","rgba(255,200,0,0.8)","rgba(255,0,0,0.8)"], borderColor:"#ccc", borderWidth:0 }]}, options: {legend: { position: "right", labels: { fontColor: "#ccc" }  }}'+\
+#         '		});'+\
+#         '		var ctx = document.getElementById("chart3").getContext("2d");'+\
+#         '		var myChart = new Chart(ctx, {'+\
+#         '			type: "doughnut", data: {labels:['+allsslabels[0:-2]+'], datasets: [{ data: ['+allssdata[0:-1]+'], borderColor: "#fff", borderWidth:0,  backgroundColor:["#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231", "#911eb4", "#46f0f0", "#f032e6", "#bcf60c", "#fabebe", "#008080", "#e6beff", "#9a6324", "#fffac8", "#800000", "#aaffc3", "#808000", "#ffd8b1", "#000075", "#808080", "#ffffff", "#000000"] }]}, options: {legend: { position: "right", labels: { fontColor: "#ccc" }}}'+\
+#         '		});'+\
+#         '	});'+\
+#         '</script>'
+#     else:
+#         r['pretablestyle'] = 'display:none;'
+
+#     r['js'] += '<script>'+\
+#     '	$(document).ready(function() {'+\
+#     '		$(".dropdown-trigger").dropdown();'+\
+#     '		$(".tooltipped").tooltip();'+\
+#     '		$(".perco").each(function() { '+\
+#     '			var pwidth = ( (($(this).attr("data-po") * 100) / '+str(totports)+') ); '+\
+#     '			$(this).css("width", pwidth+"%" ); '+\
+#     '			if($(this).attr("data-po") < 1) { $(this).html("&nbsp;"); $(this).css("background-color","#666") } '+\
+#     '		});'+\
+#     '	$("#detailstopports").html(\'<span class="small">'+str(allss[0:-2] if allss else '')+'</span>\');'+\
+#     '	});'+\
+#     '</script>'
+
+#     # Handle CPE data
+#     cpedict = {}
+#     for cpeaddr in cpe:
+#         for cpei in cpe[cpeaddr]:
+#             if re.search('^cpe:.+:.+:.+:.+$', cpei) is not None:
+#                 if cpei not in cpedict:
+#                     cpedict[cpei] = {}
+#                 if cpeaddr not in cpedict[cpei]:
+#                     cpedict[cpei][cpeaddr] = 1
+
+#     r['cpestring'] = ' <input type="hidden" id="cpestring" value="'+urllib.parse.quote_plus(base64.b64encode(json.dumps(cpedict).encode()))+'" /> '
+
+#     return render(request, 'nmapreport/nmap_hostdetails.html', r)
 
 def scan_diff(request, f1, f2):
 	r = {}

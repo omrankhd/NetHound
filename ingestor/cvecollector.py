@@ -3,6 +3,7 @@ import asyncio
 import argparse
 import json
 import requests
+import time
 from vuln_checkers import check_ftp, check_dns, check_smtp, check_smb,check_telnet,checkservice3
 from time import sleep
 from pathlib import Path
@@ -161,15 +162,24 @@ def load_all_xml_files(folder_path):
         all_hosts.extend(hosts)
     return all_hosts
 
-def runcvecollector(folder_project,outputfilename):
+def runcvecollector(folder_project, outputfilename, scan_options=None):
     output = outputfilename
 
     all_hosts = load_all_xml_files(folder_project)
     print(all_hosts)
     findings = asyncio.run(check_services(all_hosts))
 
+    # Create the final output structure
+    output_data = {
+        "scan_metadata": {
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "scan_options": scan_options
+        },
+        "scan_results": findings
+    }
+
     with open(output, "w") as f:
-        json.dump(findings, f, indent=4)
+        json.dump(output_data, f, indent=4)
 
     print(f"\n[✓] Scan complete. Combined results saved to: {output}")
 

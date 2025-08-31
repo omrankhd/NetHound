@@ -41,7 +41,7 @@ class EnhancedServiceDetector:
         """Main service version detection function"""
         print(f"Analyzing port {port}...")
         
-        # Try specific protocol detection based on port
+        
         service_info = {
             'port': port,
             'service': self.common_ports.get(port, 'Unknown'),
@@ -50,7 +50,7 @@ class EnhancedServiceDetector:
             'confidence': 'Low'
         }
 
-        # Protocol-specific version detection
+        
         if port == 80 or port == 8080:
             return self._detect_http_version(ip, port, service_info)
         elif port == 443 or port == 8443 or port == 8443:

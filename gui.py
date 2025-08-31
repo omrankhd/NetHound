@@ -123,7 +123,29 @@ def run_script():
     result = subprocess.run(cmd)
 
     if result.returncode == 0:
-        runcvecollector(output_dir,cve_output)
+        # Create scan options dictionary
+        scan_options = {
+            "target_settings": {
+                "targets": targets,
+                "nmap_host_discovery": nmapsn.get()
+            },
+            "scan_options": {
+                "sV": sV_var.get(),
+                "sS": sS_var.get(),
+                "sT": sT_var.get(),
+                "sU": sU_var.get(),
+                "A": A_var.get(),
+                "O": O_var.get(),
+                "Pn": Pn_var.get(),
+                "T4": T4_var.get()
+            },
+            "port_settings": {
+                "use_top_ports": top_var.get(),
+                "custom_ports": ports_entry.get().strip()
+            },
+            "command": " ".join(cmd)
+        }
+        runcvecollector(output_dir, cve_output, scan_options)
         elapsed = time.time() - start_time
         print(f"[+] All tasks completed in {elapsed:.2f} seconds.")
         messagebox.showinfo("Done", f"All tasks completed in {elapsed:.2f} seconds.")
