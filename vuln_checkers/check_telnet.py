@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
-"""
-Telnet Vulnerability Scanner
-A script to check for common telnet vulnerabilities and security issues.
-"""
+
 
 import socket
 import time

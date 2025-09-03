@@ -6,15 +6,12 @@ A tool for testing FTP servers for common security vulnerabilities
 
 import ftplib
 import socket
-import ssl
 import argparse
-import sys
 import time
-import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import random
 import string
-import re
+
 
 class FTPVulnerabilityScanner:
     def __init__(self, target_host, port=21, timeout=10):
@@ -288,51 +285,7 @@ class FTPVulnerabilityScanner:
             print(f"[!] Error testing directory traversal: {e}")
             self.results['directory_traversal'] = None
             return False
-    
-    def check_brute_force_protection(self):
-        """Test for brute force protection"""
-        print(f"[*] Testing brute force protection")
-        
-        failed_attempts = 0
-        max_attempts = 5
-        
-        for i in range(max_attempts):
-            try:
-                ftp = self.connect_ftp()
-                if ftp:
-                    try:
-                        random_user = ''.join(random.choices(string.ascii_letters, k=8))
-                        random_pass = ''.join(random.choices(string.ascii_letters, k=8))
-                        ftp.login(random_user, random_pass)
-                    except ftplib.error_perm:
-                        failed_attempts += 1
-                    except Exception as e:
-                        if "too many" in str(e).lower() or "blocked" in str(e).lower():
-                            print(f"[+] Brute force protection detected after {i+1} attempts")
-                            self.results['brute_force_protection'] = True
-                            return True
-                    finally:
-                        try:
-                            ftp.quit()
-                        except:
-                            pass
-                        
-                time.sleep(1)  # Brief delay between attempts
-                
-            except Exception as e:
-                if "too many" in str(e).lower() or "blocked" in str(e).lower():
-                    print(f"[+] Brute force protection detected")
-                    self.results['brute_force_protection'] = True
-                    return True
-                    
-        if failed_attempts == max_attempts:
-            print(f"[!] WEAKNESS: No brute force protection detected after {max_attempts} failed attempts")
-            self.results['brute_force_protection'] = False
-            return False
-        else:
-            print(f"[+] Brute force protection appears to be in place")
-            self.results['brute_force_protection'] = True
-            return True
+
     
     def check_passive_mode(self):
         """Check passive mode functionality"""
@@ -388,7 +341,6 @@ class FTPVulnerabilityScanner:
             self.check_ssl_support,
             self.check_bounce_attack,
             self.check_directory_traversal,
-            self.check_brute_force_protection,
             self.check_passive_mode
         ]
         

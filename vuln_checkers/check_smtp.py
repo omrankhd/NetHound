@@ -229,11 +229,11 @@ class SMTPVulnerabilityChecker:
         critical_found = False
         
         if self.results.get('open_relay'):
-            report += "❌ OPEN RELAY DETECTED - Server allows relaying emails from external domains\n"
+            report += " OPEN RELAY DETECTED - Server allows relaying emails from external domains\n"
             critical_found = True
         
         if not critical_found:
-            report += "✅ No critical vulnerabilities found\n"
+            report += " No critical vulnerabilities found\n"
         
         report += "\n"
         
@@ -241,24 +241,24 @@ class SMTPVulnerabilityChecker:
         report += "SECURITY CONCERNS:\n"
         
         if self.results.get('vrfy_enabled'):
-            report += "⚠️  VRFY command enabled - Allows user enumeration\n"
+            report += "  VRFY command enabled - Allows user enumeration\n"
             if self.results.get('valid_users'):
                 report += f"   Valid users found: {', '.join(self.results['valid_users'])}\n"
         
         if self.results.get('expn_enabled'):
-            report += "⚠️  EXPN command enabled - Allows mailing list enumeration\n"
+            report += " EXPN command enabled - Allows mailing list enumeration\n"
         
         # TLS/SSL configuration
         tls_info = self.results.get('tls_info', {})
         report += "\nTLS/SSL CONFIGURATION:\n"
         
         if tls_info.get('starttls_supported'):
-            report += "✅ STARTTLS supported\n"
+            report += " STARTTLS supported\n"
         else:
-            report += "❌ STARTTLS not supported\n"
+            report += " STARTTLS not supported\n"
         
         if tls_info.get('ssl_direct'):
-            report += "✅ Direct SSL supported\n"
+            report += " Direct SSL supported\n"
         
         if tls_info.get('tls_version'):
             report += f"   TLS Version: {tls_info['tls_version']}\n"

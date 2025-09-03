@@ -350,7 +350,7 @@ def find_json_upward(start_path, stop_path="/opt/xml"):
 		return None
 def load_collector_info(start_path):
     collector_info = {}
-
+    
     json_path = find_json_upward(start_path)
     if not json_path:
         print("Warning: collector JSON not found.")
@@ -359,37 +359,48 @@ def load_collector_info(start_path):
     try:
         with open(json_path, 'r') as f:
             collector_data = json.load(f)
-            for entry in collector_data:
-                if isinstance(entry, dict) and 'ip' in entry:
-                    ip = entry['ip']
-                    collector_info[ip] = {'services': {}}
-                    for svc in entry.get('services', []):
-                        port = svc.get('port')
-                        service_name = svc.get('service')
-                        product = svc.get('product')
-                        version = svc.get('version')
-                        misc = svc.get('Misc')
-                        cves = svc.get('cves', [])
-                        vulns = svc.get('vulns', {})
-                        vuln_checks = {}
-                        # Add all vulnerability check results
-                        for k in svc.keys():
-                            if k.endswith('vulnerability check'):
-                                vuln_checks[k] = svc[k]
-                        # Store all info for this port
-                        collector_info[ip]['services'][port] = {
-                            'service': service_name,
-                            'product': product,
-                            'version': version,
-                            'misc': misc,
-                            'cves': cves,
-                            'vulns': vulns,
-                            'vuln_checks': vuln_checks
-                        }
-                else:
-                    print(f"Skipping invalid entry in {json_path}: {entry}")
+        
+        # Store scan metadata in collector_info
+        if 'scan_metadata' in collector_data:
+            collector_info['scan_metadata'] = collector_data['scan_metadata']
+        
+        # Process scan results
+        scan_results = collector_data.get('scan_results', [])
+        
+        for entry in scan_results:
+            if isinstance(entry, dict) and 'ip' in entry:
+                ip = entry['ip']
+                collector_info[ip] = {'services': {}}
+                
+                for svc in entry.get('services', []):
+                    port = str(svc.get('port'))  # Convert to string for consistency
+                    service_name = svc.get('service')
+                    product = svc.get('product')
+                    version = svc.get('version')
+                    misc = svc.get('Misc')
+                    cves = svc.get('cves', [])
+                    vulns = svc.get('vulns', {})
+                    
+                    vuln_checks = {}
+                    # Add all vulnerability check results
+                    for k in svc.keys():
+                        if k.endswith('vulnerability check'):
+                            vuln_checks[k] = svc[k]
+                    
+                    # Store all info for this port
+                    collector_info[ip]['services'][port] = {
+                        'service': service_name,
+                        'product': product,
+                        'version': version,
+                        'misc': misc,
+                        'cves': cves,
+                        'vulns': vulns,
+                        'vuln_checks': vuln_checks
+                    }
+            else:
+                print(f"Skipping invalid entry in {json_path}: {entry}")
+                
     except Exception as e:
         print(f"Warning: could not load collector info from {json_path}: {e}")
-
+    
     return collector_info
-

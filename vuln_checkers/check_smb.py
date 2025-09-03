@@ -320,13 +320,7 @@ class SMBVulnerabilityChecker:
             logger.debug(f"Guest access check error: {e}")
             return False
     
-    def enumerate_shares(self) -> List[str]:
-        """Attempt to enumerate available shares"""
-        # This would require establishing an authenticated session
-        # For now, return common share names to check
-        common_shares = ['C$', 'ADMIN$', 'IPC$', 'print$', 'fax$', 'shared', 'public']
-        logger.info("Share enumeration requires authentication - checking common shares")
-        return common_shares
+   
     
     def run_full_assessment(self) -> Dict:
         """Run complete SMB vulnerability assessment"""
@@ -341,7 +335,7 @@ class SMBVulnerabilityChecker:
         self.results['smb_signing'] = self.check_smb_signing()
         self.results['null_session'] = self.check_null_session()
         self.results['guest_access'] = self.check_guest_access()
-        self.results['common_shares'] = self.enumerate_shares()
+        
         
         return self.results
     
@@ -373,12 +367,12 @@ class SMBVulnerabilityChecker:
         
         
         if self.results.get('null_session'):
-            report += "❌ NULL SESSION AUTHENTICATION ALLOWED\n"
-            report += "   Anonymous access may be possible\n"
+            report += " NULL SESSION AUTHENTICATION ALLOWED\n"
+            report += "  Anonymous access may be possible\n"
             critical_found = True
         
         if not critical_found:
-            report += "✅ No critical vulnerabilities detected\n"
+            report += " No critical vulnerabilities detected\n"
         
         report += "\n"
         
@@ -387,23 +381,18 @@ class SMBVulnerabilityChecker:
         
         signing = self.results.get('smb_signing', {})
         if signing.get('signing_required'):
-            report += "✅ SMB signing is required\n"
+            report += " SMB signing is required\n"
         elif signing.get('signing_enabled'):
-            report += "⚠️  SMB signing is enabled but not required\n"
+            report += " SMB signing is enabled but not required\n"
         else:
-            report += "❌ SMB signing is disabled\n"
+            report += "SMB signing is disabled\n"
         
         if self.results.get('guest_access'):
-            report += "⚠️  Guest account access is enabled\n"
+            report += "  Guest account access is enabled\n"
         else:
-            report += "✅ Guest account access is disabled\n"
+            report += " Guest account access is disabled\n"
         
-        # Common Shares
-        shares = self.results.get('common_shares', [])
-        if shares:
-            report += f"\nCOMMON SHARES TO INVESTIGATE:\n"
-            for share in shares:
-                report += f"  {share}\n"
+       
         
         # Recommendations
         report += "\nRECOMMENDATIONS:\n"

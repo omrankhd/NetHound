@@ -45,36 +45,36 @@ def parse_nmap_xml(xml_file):
 
 
 
-def query_vulners(product, version):
-    url = "https://vulners.com/api/v3/search/lucene/"
-    query = f'{product} {version}'
-    params = {'query': query, 'size': 10}
-    try:
-        response = requests.get(url, params=params, timeout=10)
-        prepared_request = requests.Request('GET', url, params=params).prepare()
+# def query_vulners(product, version):
+#     url = "https://vulners.com/api/v3/search/lucene/"
+#     query = f'{product} {version}'
+#     params = {'query': query, 'size': 10}
+#     try:
+#         response = requests.get(url, params=params, timeout=10)
+#         prepared_request = requests.Request('GET', url, params=params).prepare()
 
-        print("Request URL:", prepared_request.url)
+#         print("Request URL:", prepared_request.url)
 
-        if response.status_code == 200:
-            data = response.json()
-            # pprint.pprint(data)
-            cves = set()
+#         if response.status_code == 200:
+#             data = response.json()
+#             # pprint.pprint(data)
+#             cves = set()
             
-            if data.get('result') == 'OK' and 'documents' in data.get('data', {}):
-                for doc in data['data']['documents']:
-                    if 'cvelist' in doc and doc['cvelist']:
-                        cves.update(doc['cvelist'])
-                    elif 'id' in doc and doc['id'].startswith('CVE-'):
-                        cves.add(doc['id'])
+#             if data.get('result') == 'OK' and 'documents' in data.get('data', {}):
+#                 for doc in data['data']['documents']:
+#                     if 'cvelist' in doc and doc['cvelist']:
+#                         cves.update(doc['cvelist'])
+#                     elif 'id' in doc and doc['id'].startswith('CVE-'):
+#                         cves.add(doc['id'])
             
-            elif data.get('result') == 'OK' and 'search' in data.get('data', {}):
-                for doc in data['data']['search']:
-                    cvelist = doc.get('_source', {}).get('cvelist', [])
-                    cves.update(cvelist)
-            return list(cves)
-    except Exception as e:
-        print(f"[!] Vulners API error for {product} {version}: {e}")
-    return []
+#             elif data.get('result') == 'OK' and 'search' in data.get('data', {}):
+#                 for doc in data['data']['search']:
+#                     cvelist = doc.get('_source', {}).get('cvelist', [])
+#                     cves.update(cvelist)
+#             return list(cves)
+#     except Exception as e:
+#         print(f"[!] Vulners API error for {product} {version}: {e}")
+#     return []
 
 async def check_services(hosts):
 
@@ -133,15 +133,15 @@ async def check_services(hosts):
             if "smb" or "netbios" or "microsoft-ds" or "samba" in name or port == 445:
                 svc["SMB vulnerability check"] = check_smb.run_smb_vuln_scan(ip, port, timeout=10)  
             # Query Vulners
-            if product and version:
-                print(f"Querying Vulners for {product} {version} on {ip}:{port}")
-                cves = query_vulners(product, version)
-                sleep(1) 
-                svc.update({"cves": cves})
-            else:
-                print(f"Skipping Vulners query for {ip}:{port} - missing product/version")
+            # if product and version:
+            #     print(f"Querying Vulners for {product} {version} on {ip}:{port}")
+            #     cves = query_vulners(product, version)
+            #     sleep(1) 
+            #     svc.update({"cves": cves})
+            # else:
+            #     print(f"Skipping Vulners query for {ip}:{port} - missing product/version")
             
-            # svc["vulns"]  = scanner.scan_vulnerabilities(product, version, port)
+            svc["vulns"]  = scanner.scan_vulnerabilities(product, version, port)
 
             enriched_services.append(svc)
 
