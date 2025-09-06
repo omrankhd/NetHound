@@ -35,15 +35,7 @@
 						<b class="orange-text">Protocol:</b> {{ stats.protocol|default:"Unknown" }}<br>
 						{% endif %}
 						<b class="orange-text">Total Hosts:</b> {{ stats.hostsup }}<br>
-						{% if network_stats %}
-						<br><b class="red-text">Security Overview:</b><br>
-						<span class="red-text">Critical: {{ network_stats.total_critical }}</span><br>
-						<span class="orange-text">High: {{ network_stats.total_high }}</span><br>
-						<span class="yellow-text">Medium: {{ network_stats.total_medium }}</span><br>
-						{% if network_stats.exploited_wild > 0 %}
-						<span class="red-text"><i class="fas fa-fire"></i> Exploited: {{ network_stats.exploited_wild }}</span>
-						{% endif %}
-						{% endif %}
+
 					</div>
 					<div class="col s12 m4 hide-on-med-and-down" style="border-left:solid #666 1px;">{{ stats.scaninfobox2|safe }}</div>
 					<div class="col s12 m4 hide-on-med-and-down" style="border-left:solid #666 1px;">{{ stats.scaninfobox3|safe }}</div>
@@ -117,42 +109,7 @@
 			{{ js|safe }}
 		{% endif %}
 
-		<!-- Network-wide Security Summary (NEW) -->
-		{% if network_cves %}
-		<div class="card wmcard">
-			<div class="card-content">
-				<h5 class="red-text"><i class="fas fa-exclamation-triangle"></i> Network Security Overview</h5>
-				
-				<div class="row">
-					<div class="col s12 m3" style="text-align: center;">
-						<div class="card" style="background-color: rgba(244,67,54,0.2); padding: 10px;">
-							<h4 class="red-text">{{ network_stats.total_critical }}</h4>
-							<span class="small grey-text">CRITICAL</span>
-						</div>
-					</div>
-					<div class="col s12 m3" style="text-align: center;">
-						<div class="card" style="background-color: rgba(255,152,0,0.2); padding: 10px;">
-							<h4 class="orange-text">{{ network_stats.total_high }}</h4>
-							<span class="small grey-text">HIGH</span>
-						</div>
-					</div>
-					<div class="col s12 m3" style="text-align: center;">
-						<div class="card" style="background-color: rgba(251,192,45,0.2); padding: 10px;">
-							<h4 class="yellow-text">{{ network_stats.total_medium }}</h4>
-							<span class="small grey-text">MEDIUM</span>
-						</div>
-					</div>
-					<div class="col s12 m3" style="text-align: center;">
-						<div class="card" style="background-color: rgba(76,175,80,0.2); padding: 10px;">
-							<h4 class="green-text">{{ network_stats.exploited_wild }}</h4>
-							<span class="small grey-text">EXPLOITED</span>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-		{% endif %}
-
+		
 		<!-- Host Details (Enhanced) -->
 		{% for i,v in tr.items %}
 			<div class="card wmcard">
@@ -171,38 +128,6 @@
 							<i class="fas fa-door-open green-text"></i> <span class="green-text">{{ v.po }}</span>
 							<i class="fas fa-door-closed red-text"></i> <span class="red-text">{{ v.pc }}</span>
 							<i class="fas fa-filter orange-text"></i> <span class="orange-text">{{ v.pf }}</span>
-
-							<!-- NEW: Security Status Summary -->
-							{% for host in scan_hosts %}
-								{% if host.ip == i %}
-									<div style="margin-top: 15px; padding: 10px; background-color: rgba(40,40,40,0.3); border-radius: 4px;">
-										<h6 class="orange-text"><i class="fas fa-shield-alt"></i> Security Status</h6>
-										{% if host.total_critical > 0 or host.total_high > 0 or host.total_medium > 0 %}
-											<div class="small">
-												{% if host.total_critical > 0 %}
-												<span class="red white-text" style="padding: 2px 6px; border-radius: 3px; font-size: 10px; margin: 2px;">
-													{{ host.total_critical }} CRITICAL
-												</span>
-												{% endif %}
-												{% if host.total_high > 0 %}
-												<span class="orange white-text" style="padding: 2px 6px; border-radius: 3px; font-size: 10px; margin: 2px;">
-													{{ host.total_high }} HIGH
-												</span>
-												{% endif %}
-												{% if host.total_medium > 0 %}
-												<span class="yellow white-text" style="padding: 2px 6px; border-radius: 3px; font-size: 10px; margin: 2px;">
-													{{ host.total_medium }} MEDIUM
-												</span>
-												{% endif %}
-											</div>
-										{% else %}
-											<span class="green white-text" style="padding: 2px 6px; border-radius: 3px; font-size: 10px;">
-												NO KNOWN VULNERABILITIES
-											</span>
-										{% endif %}
-									</div>
-								{% endif %}
-							{% endfor %}
 						</div>
 						<div class="col s4 small grey-text">
 							<b>OPEN PORTS %</b>
@@ -256,12 +181,17 @@
 									<div class="row" style="margin-bottom: 0;">
 										<!-- Service Info Column -->
 										<div class="col s12 m4">
-											<h6 class="green-text">
-												<i class="fas fa-door-open"></i> Port {{ port }}
+											<h6 class="{% if service_data.state == 'open' %}green-text{% elif service_data.state == 'closed' %}red-text{% else %}orange-text{% endif %}">
+												<i class="fas fa-{% if service_data.state == 'open' %}door-open{% elif service_data.state == 'closed' %}door-closed{% else %}filter{% endif %}"></i> 
+												Port {{ port }} 
+												<span style="font-size: 12px;">({{ service_data.state|upper }})</span>
 											</h6>
 											<div class="small">
+												{% if service_data.state %}
+													<b>State:</b> {{ service_data.state }}<br>
+												{% endif %}
 												{% if service_data.service %}
-													<b>Service:</b> {{ service_data.service }}<br>
+													<b>Service:</b> {{ service_data.service}}<br>
 												{% endif %}
 												{% if service_data.product %}
 													<b>Product:</b> {{ service_data.product }}<br>

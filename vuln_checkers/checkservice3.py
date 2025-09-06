@@ -319,7 +319,7 @@ class EnhancedServiceDetector:
             service_info['details']['welcome'] = welcome
             
             # Send SYST command to get system information
-            sock.send(b'SYST\r\n')
+            sock.send(b'status\r\n')
             syst_response = sock.recv(1024).decode('utf-8', errors='ignore').strip()
             service_info['details']['syst'] = syst_response
             

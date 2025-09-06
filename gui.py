@@ -10,7 +10,7 @@ import time
 import json
 import os
 from ingestor.cvecollector import *
-from nmapreport import  get_ip_and_cidr
+from nmapreport import get_ip_and_cidr
 
 
 HISTORY_FILE = "input_history.json"
@@ -276,13 +276,28 @@ target_entry.bind('<FocusIn>', on_target_entry_focus_in)
 target_entry.bind('<FocusOut>', on_target_entry_focus_out)
 target_entry.grid(row=0, column=1, columnspan=2, sticky="ew", **padding)
 
+# IP address display
+ip_frame = tk.Frame(targets_frame, bg="#f0f0f0", relief=tk.GROOVE, bd=2)
+ip_frame.grid(row=1, column=0, columnspan=3, sticky="ew", **padding)
+
+local_ip = get_ip_and_cidr.get_local_ip()
+ip_text = f"Your IP address: {local_ip if local_ip else 'not connected'}"
+ip_label = tk.Label(ip_frame, 
+                   text=ip_text, 
+                   bg="#f0f0f0", 
+                   font=('Helvetica', 10, 'bold'),
+                   fg='#2d5986',  # Dark blue color
+                   pady=5,
+                   padx=10)
+ip_label.pack(fill='x')
+
 # Host discovery option in targets frame
 nmapsn = tk.BooleanVar(value=True)
-tk.Checkbutton(targets_frame, text="Use nmap host discovery (-sn)", variable=nmapsn, bg="#ffffff").grid(row=1, column=0, columnspan=3, sticky="w", **padding)
+tk.Checkbutton(targets_frame, text="Use nmap host discovery (-sn)", variable=nmapsn, bg="#ffffff").grid(row=2, column=0, columnspan=3, sticky="w", **padding)
 
-tk.Label(targets_frame, text="Output Directory:", bg="#ffffff").grid(row=2, column=0, sticky="w", **padding)
+tk.Label(targets_frame, text="Output Directory:", bg="#ffffff").grid(row=3, column=0, sticky="w", **padding)
 output_dir_entry = ttk.Combobox(targets_frame, width=70, values=recent_output_dirs)
-output_dir_entry.grid(row=2, column=1, columnspan=2, sticky="ew", **padding)
+output_dir_entry.grid(row=3, column=1, columnspan=2, sticky="ew", **padding)
 
 
 ttk.Separator(frame, orient='horizontal').grid(row=3, column=0, columnspan=3, sticky="ew", pady=10)

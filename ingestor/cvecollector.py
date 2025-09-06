@@ -29,10 +29,12 @@ def parse_nmap_xml(xml_file):
         services = []
         for port in host.findall(".//port"):
             state = port.find("state")
-            if state is not None and state.attrib.get("state") == "open":
+            # if state is not None and state.attrib.get("state") == "open":
+            if state is not None :
                 service = port.find("service")
                 port_info = {
                     "port": int(port.attrib['portid']),
+                    "state": state.attrib.get("state"),
                     "protocol": port.attrib['protocol'],
                     "service": service.attrib.get("name") if service is not None else None,
                     "product": service.attrib.get("product") if service is not None else None,
@@ -45,36 +47,6 @@ def parse_nmap_xml(xml_file):
 
 
 
-# def query_vulners(product, version):
-#     url = "https://vulners.com/api/v3/search/lucene/"
-#     query = f'{product} {version}'
-#     params = {'query': query, 'size': 10}
-#     try:
-#         response = requests.get(url, params=params, timeout=10)
-#         prepared_request = requests.Request('GET', url, params=params).prepare()
-
-#         print("Request URL:", prepared_request.url)
-
-#         if response.status_code == 200:
-#             data = response.json()
-#             # pprint.pprint(data)
-#             cves = set()
-            
-#             if data.get('result') == 'OK' and 'documents' in data.get('data', {}):
-#                 for doc in data['data']['documents']:
-#                     if 'cvelist' in doc and doc['cvelist']:
-#                         cves.update(doc['cvelist'])
-#                     elif 'id' in doc and doc['id'].startswith('CVE-'):
-#                         cves.add(doc['id'])
-            
-#             elif data.get('result') == 'OK' and 'search' in data.get('data', {}):
-#                 for doc in data['data']['search']:
-#                     cvelist = doc.get('_source', {}).get('cvelist', [])
-#                     cves.update(cvelist)
-#             return list(cves)
-#     except Exception as e:
-#         print(f"[!] Vulners API error for {product} {version}: {e}")
-#     return []
 
 async def check_services(hosts):
 
@@ -90,15 +62,18 @@ async def check_services(hosts):
             port = svc["port"]
             product = svc.get("product")
             version = svc.get("version")
+            print(product)
+            print(version)
             # Run service detection for this port (returns a list of dicts)
             misc_results = checkservice3.run_service_detection(ip, str(port))
             svc["Misc"] = misc_results
-            # Find the result for the current port
             
+            # Find the result for the current port
             if misc_results:
-            # Option 1: Use first result (if the function returns results for the specific port only)
+                # Option 1: Use first result (if the function returns results for the specific port only)
                 result = misc_results[0]
                 
+                # Handle product assignment
                 if not product and result:
                     product = result.get("service", "")
                     if product:
@@ -106,46 +81,51 @@ async def check_services(hosts):
                 
                 if product == "Unknown":
                     product = svc.get("service", "")
-
-                if version =="Unkown":
-                    version = result.get("version", None)
-                    svc.update({"version": version})
                 
-                # if not version and result:
-                #     version = result.get("version", None)
-                #     if version:
-                #         svc.update({"version": version})
+                # Handle version assignment - check if version is already assigned or is "Unknown"
+                if (not version or version == "Unknown") and result:
+                    new_version = result.get("version", None)
+                    if new_version:
+                        version = new_version
+                        svc.update({"version": version})
             
-            print (product)
-            print (version)
+            print(product)
+            print(version)
+            
             # Check FTP
-            if "ftp" in name or port == (21 or 20 ):
-               svc["ftp vulnerability check"]  = check_ftp.run_ftp_vuln_scan(ip, port, timeout=10)
-
+            if "ftp" in name or port in (21, 20):  # Fixed the condition here
+                svc["ftp vulnerability check"] = check_ftp.run_ftp_vuln_scan(ip, port, timeout=10)
+            
             # Check Telnet
             if "telnet" in name or port == 23:
                 svc["telnet vulnerability check"] = check_telnet.run_telnet_vuln_scan(ip, port)
+            
             # Check DNS
-            if "domain"  in name or port == 53 or port == 5353:
+            if "domain" in name or port == 53 or port == 5353:
                 svc["DNS vulnerability check"] = check_dns.run_dns_vuln_scan(ip)
+            
             if "smtp" in name or port == 25:
-                svc["SMTP vulnerability check"] = check_smtp.run_smtp_vuln_scan(ip, port, timeout=10)   
-            if "smb" or "netbios" or "microsoft-ds" or "samba" in name or port == 445:
-                svc["SMB vulnerability check"] = check_smb.run_smb_vuln_scan(ip, port, timeout=10)  
+                svc["SMTP vulnerability check"] = check_smtp.run_smtp_vuln_scan(ip, port, timeout=10)
+            
+            if any(x in name for x in ["smb", "netbios", "microsoft-ds", "samba"]) or port == 445:
+                svc["SMB vulnerability check"] = check_smb.run_smb_vuln_scan(ip, port, timeout=10)
+            
             # Query Vulners
             # if product and version:
             #     print(f"Querying Vulners for {product} {version} on {ip}:{port}")
             #     cves = query_vulners(product, version)
-            #     sleep(1) 
+            #     sleep(1)
             #     svc.update({"cves": cves})
             # else:
             #     print(f"Skipping Vulners query for {ip}:{port} - missing product/version")
             
-            svc["vulns"]  = scanner.scan_vulnerabilities(product, version, port)
-
+            if product:
+                print(f"Scanning vulnerabilities for {product} {version} on {ip}:{port}")
+                svc["vulns"] = scanner.scan_vulnerabilities(product, version, port)
+          
+                
             enriched_services.append(svc)
-
-
+        
         results.append({
             "ip": ip,
             "services": enriched_services

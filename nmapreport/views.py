@@ -957,12 +957,12 @@ def index(request, filterservice="", filterportid=""):
 					if 'services' in collector_info[address]:
 						r['tr'][address]['services'] = {}
 						for port, service_data in collector_info[address]['services'].items():
-						
 							vulns_data = service_data.get('vulns', {})
 							vulnerabilities = vulns_data.get('vulnerabilities', []) if isinstance(vulns_data, dict) else []
 							
 							r['tr'][address]['services'][port] = {
 								'service': service_data.get('service', ''),
+								'state': service_data.get('state',''),
 								'product': service_data.get('product', ''),
 								'version': service_data.get('version', ''),
 								'misc': service_data.get('misc', ''),

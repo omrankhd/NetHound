@@ -374,6 +374,7 @@ def load_collector_info(start_path):
                 
                 for svc in entry.get('services', []):
                     port = str(svc.get('port'))  # Convert to string for consistency
+                    state =svc.get('state')
                     service_name = svc.get('service')
                     product = svc.get('product')
                     version = svc.get('version')
@@ -389,7 +390,9 @@ def load_collector_info(start_path):
                     
                     # Store all info for this port
                     collector_info[ip]['services'][port] = {
+						
                         'service': service_name,
+                        'state': state,
                         'product': product,
                         'version': version,
                         'misc': misc,
