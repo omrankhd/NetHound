@@ -6,8 +6,6 @@ For legitimate security testing of SMTP servers you own or have permission to te
 
 import smtplib
 import socket
-import ssl
-import re
 import sys
 from typing import Dict, List, Tuple, Optional
 import argparse

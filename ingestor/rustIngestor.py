@@ -1,10 +1,7 @@
 import asyncio
 import subprocess
-import xmltodict
-import json
 import argparse
 import os
-import aiofiles
 import sys
 from ipaddress import ip_network
 import re

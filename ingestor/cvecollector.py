@@ -2,7 +2,6 @@ import xml.etree.ElementTree as ET
 import asyncio
 import argparse
 import json
-import requests
 import time
 from vuln_checkers import check_ftp, check_dns, check_smtp, check_smb,check_telnet,checkservice3
 from time import sleep

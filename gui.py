@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import  messagebox
 from tkinter import ttk
 from PIL import Image, ImageTk  # type: ignore # Pillow library
 import subprocess
@@ -10,7 +10,7 @@ import time
 import json
 import os
 from ingestor.cvecollector import *
-from nmapreport import get_ip_and_cidr
+from nethoundreport import get_ip_and_cidr
 
 
 HISTORY_FILE = "input_history.json"
@@ -167,7 +167,7 @@ root.geometry("900x600")  # Larger size to accommodate all options
 
 # Set the icon icon
 try:
-    icon_path = "nmapreport/static/logomin.png"
+    icon_path = "nethoundreport/static/logomin.png"
     if os.path.exists(icon_path):
         icon = ImageTk.PhotoImage(Image.open(icon_path))
         root.iconphoto(True, icon)

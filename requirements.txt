@@ -1,0 +1,12 @@
+django>=4.2.20
+requests>=2.31.0
+xmltodict>=0.13.0
+pillow>=10.0.0
+python-nmap>=0.7.1
+pathlib>=1.0.1
+asyncio>=3.4.3
+argparse>=1.4.0
+typing>=3.7.4.3
+dnspython
+
+

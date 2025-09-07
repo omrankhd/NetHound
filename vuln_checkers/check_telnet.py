@@ -3,9 +3,7 @@
 
 import socket
 import time
-import threading
 import argparse
-import sys
 from typing import List, Dict, Tuple, Optional
 
 class TelnetVulnScanner:

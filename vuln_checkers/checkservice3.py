@@ -1,16 +1,10 @@
 import socket
 import ssl
-import threading
-import time
 import re
 import struct
-import binascii
-import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import urllib.request
 import urllib.error
-import urllib.parse
-import base64
 import sys
 from typing import List, Dict, Any, Optional, Tuple, Union
 

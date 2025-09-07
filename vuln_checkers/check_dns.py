@@ -5,7 +5,6 @@ import dns.resolver
 import dns.query
 import dns.message
 import dns.rdatatype
-import dns.flags
 import argparse
 import sys
 import time

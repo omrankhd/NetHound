@@ -1,0 +1,139 @@
+{% extends "nethoundreport/main.html" %}
+
+
+{% block content %}
+<!-- <div>
+
+</div> -->
+	<style type="text/css">
+		#mynetwork {
+			width: 100%;
+			height: 100vh;
+		}
+		
+	</style>
+	
+	<div class="" style="margin-top:10px; margin-bottom: 10px;">
+		<div id="mynetwork"></div>
+		<div >
+		<button id="toggle-physics" class="btn blue" style="
+		position: fixed;
+		bottom: 20px;
+		right: 20px;
+		z-index: 9999;
+	  ">Toggle Physics</button></div>
+	</div>
+
+	<script>
+	var nodes, edges, network;
+	var icons = {};
+	var physicsEnabled = true;
+
+	function addNode(id, label, fontcode, color, fontcolor) {
+		try {
+			nodes.add({
+				id: id,
+				mass: 1,				
+				label: label.replace(/\%20/g, " "),
+				value: 20,
+				//physics: false,
+				shape: 'icon',
+				icon: {
+					face: '"Font Awesome 5 Free"',
+					code: fontcode,
+					size: 90,
+					color: color,
+				},
+				font: {
+					face: 'monospace',
+					color: fontcolor,
+					size: 40,
+				},
+			});
+		} catch (err) {
+			console.log(err);
+		}
+	}
+
+	function draw() {
+		nodes = new vis.DataSet();
+		edges = new vis.DataSet();
+
+		var container = document.getElementById('mynetwork');
+		var data = {
+			nodes: nodes,
+			edges: edges
+		};
+		var options = {
+			nodes: {
+				shape: 'icon',
+				icon: {
+					face: '"Font Awesome 5 Free"',
+					code: '\uf15b',
+				},
+			}, 
+			layout: {
+			hierarchical: false ,
+    		randomSeed: 42
+  			},
+			"physics": {
+				   
+				"timestep": 1.2,
+				"solver": "forceAtlas2Based",
+				// "solver": "barnesHut",
+				"maxVelocity": 20,
+				"minVelocity": 4,
+				"forceAtlas2Based": {
+					"theta": 0.5,
+					"gravitationalConstant": -500,
+					"centralGravity": 0.01,
+					"springConstant": 0.08,
+					"springLength": 5,
+					"damping": 0.4,
+					"avoidOverlap": 1
+				},
+				"repulsion": {
+					"centralGravity": 0
+				},
+				"stabilization": {
+					enabled: true,
+					iterations: 500,
+					updateInterval: 25,
+					onlyDynamicEdges: true,
+					fit: true
+				}
+
+
+
+			},
+		};
+
+		network = new vis.Network(container, data, options);
+		network.moveTo({
+		scale: 0.3, // zoom level: try 0.8, 1.0, or 1.2
+		position: { x: 0, y: 0 }, // adjust to your layout center
+		animation: true
+	});
+		
+
+	}
+
+
+		$(document).ready(function() {
+			draw();
+			$('#toggle-physics').click(function () {
+				physicsEnabled = !physicsEnabled;
+				network.setOptions({
+					physics: {
+						enabled: physicsEnabled
+					}
+				});
+				$(this).toggleClass("green").toggleClass("blue");
+				$(this).text(physicsEnabled ? "Disable Physics" : "Enable Physics");
+			});
+		});
+	</script>
+
+		{{ js|safe }}
+
+	{% endblock %}

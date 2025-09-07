@@ -1,0 +1,578 @@
+{% extends "nethoundreport/main.html" %}
+{% load text_filters %}
+{% load json_filters %}
+{% block content %}
+	<div class="container" style="margin-top:30px;">
+
+		<div class="card wmcard">
+			<div class="card-content">
+				<div class="row hide-on-med-and-down">
+					<div class="col s12 m4 title-small grey-text">Scan Information</div>
+					<div class="col s12 m4 title-small grey-text">Ports Status</div>
+					<div class="col s12 m4 title-small grey-text">Top Ports / Services</div>
+				</div>
+				<div class="row">
+					<div class="col s12 m4 small">
+						<b class="orange-text">Scan Summary:</b><br>
+						{% if scan_metadata %}
+						<b class="orange-text">Timestamp:</b> {{ scan_metadata.timestamp }}<br>
+						<b class="orange-text">Target:</b> {{ scan_metadata.scan_options.target_settings.targets }}<br>
+						<b class="orange-text">Host Discovery:</b> {% if scan_metadata.scan_options.target_settings.nmap_host_discovery %}Enabled{% else %}Disabled{% endif %}<br>
+						<br><b class="cyan-text">Scan Options:</b><br>
+						{% if scan_metadata.scan_options.scan_options.sV %}<span class="green-text">✓ Version Detection</span><br>{% endif %}
+						{% if scan_metadata.scan_options.scan_options.sS %}<span class="green-text">✓ SYN Scan</span><br>{% endif %}
+						{% if scan_metadata.scan_options.scan_options.sT %}<span class="green-text">✓ TCP Connect</span><br>{% endif %}
+						{% if scan_metadata.scan_options.scan_options.sU %}<span class="green-text">✓ UDP Scan</span><br>{% endif %}
+						{% if scan_metadata.scan_options.scan_options.A %}<span class="green-text">✓ Aggressive</span><br>{% endif %}
+						{% if scan_metadata.scan_options.scan_options.O %}<span class="green-text">✓ OS Detection</span><br>{% endif %}
+						{% if scan_metadata.scan_options.scan_options.Pn %}<span class="green-text">✓ Skip Host Discovery</span><br>{% endif %}
+						{% if scan_metadata.scan_options.scan_options.T4 %}<span class="green-text">✓ Aggressive Timing</span><br>{% endif %}
+						{% if scan_metadata.scan_options.port_settings.use_top_ports %}<span class="blue-text">• Top Ports Used</span><br>{% endif %}
+						{% if scan_metadata.scan_options.port_settings.custom_ports %}<span class="blue-text">• Custom: {{ scan_metadata.scan_options.port_settings.custom_ports }}</span><br>{% endif %}
+						{% else %}
+						<b class="orange-text">Start Time:</b> {{ stats.startstr|default:"Unknown" }}<br>
+						<b class="orange-text">Scan Type:</b> {{ stats.scantype|default:"Unknown" }}<br>
+						<b class="orange-text">Protocol:</b> {{ stats.protocol|default:"Unknown" }}<br>
+						{% endif %}
+						<b class="orange-text">Total Hosts:</b> {{ stats.hostsup }}<br>
+
+					</div>
+					<div class="col s12 m4 hide-on-med-and-down" style="border-left:solid #666 1px;">{{ stats.scaninfobox2|safe }}</div>
+					<div class="col s12 m4 hide-on-med-and-down" style="border-left:solid #666 1px;">{{ stats.scaninfobox3|safe }}</div>
+				</div>
+			</div>
+			<div class="card-reveal grey darken-3">
+				<span class="card-title grey-text">Scan Details<i class="material-icons right">close</i></span>
+				<div class="code" style="word-wrap: break-word;overflow-wrap: break-word;">
+					<p style="font-family:monospace">{{ stats.nmapargs }}</p>
+					<p class="small">
+							Nmap version: {{ stats.nmapver }}<br>
+							XML version: {{ stats.xmlver }}
+					</p>
+				</div>
+			</div>
+			
+			{% if stats.popen == 0 and stats.pclosed == 0 and stats.pfiltered == 0 %}
+			{% else %}
+			<div class="card-action">
+				<a href="/report/view/network"><i class="fas fa-project-diagram"></i> Network View</a>
+			</div>
+			{% endif %}
+		</div>
+
+		<div class="row" style="{{ pretablestyle }}">
+			<div class="col s12 m3" style="padding:1px;"><div class="card wmcard" style="text-align:center;padding:6px;"><h4><i class="fab fa-creative-commons-sampling"></i> <span class="blue-text">{{ stats.hostsup }}</span></h4><span class="small grey-text">HOSTS UP</span></div></div>
+			<div class="col s12 m3" style="padding:1px;"><div class="card wmcard" style="text-align:center;padding:6px;"><h4><i class="fas fa-door-open green-text"></i> <span class="green-text">{{ stats.popen }}</span></h4><span class="small grey-text">OPEN PORTS</span></div></div>
+			<div class="col s12 m3" style="padding:1px;"><div class="card wmcard" style="text-align:center;padding:6px;"><h4><i class="fas fa-door-closed red-text"></i> <span class="red-text">{{ stats.pclosed }}</span></h4><span class="small grey-text">CLOSED PORTS</span></div></div>
+			<div class="col s12 m3" style="padding:1px;"><div class="card wmcard" style="text-align:center;padding:6px;"><h4><i class="fas fa-filter orange-text"></i> <span class="orange-text">{{ stats.pfiltered }}</span></h4><span class="small grey-text">FILTERED PORTS</span></div></div>
+		</div>
+
+		{% if stats.popen == 0 and stats.pclosed == 0 and stats.pfiltered == 0 %}
+		{% else %}
+		<div class="card wmcard hide-on-med-and-down" style="{{ pretablestyle }}">
+			<div class="card-content">
+				<div class="row">
+					<div class="col s4 title-small grey-text">Services</div><div class="col s8 title-small grey-text">Service Chart</div>
+					<div class="col s4" style="border-right:solid #555 1px;margin-top:10px;min-height:410px;">
+						<span style="font-family:monospace;font-size:12px;">
+							{% if stats.services %}
+								{{ stats.services|safe }}
+							{% else %}
+								<span class="grey-text">No services detected</span>
+							{% endif %}
+						</span><br><br>
+						<span class="title-small grey-text">Top 10 Ports:</span><br>
+						<span style="font-family:monospace;font-size:12px;">
+							{% if stats.portids %}
+								{{ stats.portids|safe }}
+							{% else %}
+								<span class="grey-text">No ports available</span>
+							{% endif %}
+						</span><br><br>
+						<span class="title-small grey-text">OS Type List:</span><br>
+						<span style="font-family:monospace;font-size:12px;">
+							{% if stats.ostypes %}
+								{{ stats.ostypes|safe }}
+							{% else %}
+								<span class="grey-text">No OS types detected</span>
+							{% endif %}
+						</span><br><br>
+					</div>
+					<div class="col s8" style="margin-top:10px;"><canvas id="chart2" height="200"></canvas></div>
+				</div>
+			</div>
+		</div>
+		{% endif %}
+
+		{% if stats.popen == 0 and stats.pclosed == 0 and stats.pfiltered == 0 %}
+		{% else %}
+			{{ js|safe }}
+		{% endif %}
+
+		
+		<!-- Host Details (Enhanced) -->
+		{% for i,v in tr.items %}
+			<div class="card wmcard">
+				<div class="card-content">
+					<div class="row" style="padding:0px;margin-bottom:0px;">
+						<div class="col s4" style="border-right:solid #444 1px;">
+							<div class="hindex wmcard">{{ v.hostindex }}</div>
+							{{ v.newlabelout|safe }}
+
+							{% if v.po != 0 or v.pc != 0 or v.pf != 0 %}
+								<h5><a href="/report/{{ i }}" class="blue-text text-darken-3">{{ i }}</a></h5>{{ v.hostname|safe }}
+							{% else %}
+								<h5>{{ i }}</h5>{{ v.hostname|safe }}
+							{% endif %}
+
+							<i class="fas fa-door-open green-text"></i> <span class="green-text">{{ v.po }}</span>
+							<i class="fas fa-door-closed red-text"></i> <span class="red-text">{{ v.pc }}</span>
+							<i class="fas fa-filter orange-text"></i> <span class="orange-text">{{ v.pf }}</span>
+						</div>
+						<div class="col s4 small grey-text">
+							<b>OPEN PORTS %</b>
+							{{ v.portstate|safe }}
+
+							{% if v.tags and v.tags|length > 0 %}
+								<br><b>GUESSED TAGS</b><br>
+								{% for tag in v.tags %}
+									<span class="blue white-text" style="border-radius:4px;padding:4px;font-size:10px;">#{{ tag }}</span>
+								{% endfor %}
+							{% endif %}
+						</div>
+						<div class="col s2 small">
+							<b>PORTS</b><br>
+							{% if v.ports %}
+								{{ v.ports|safe }}
+							{% else %}
+								<span class="grey-text">No ports detected</span>
+							{% endif %}
+						</div>
+					</div>
+
+					<!-- Enhanced Service Information Section -->
+					<div class="row" style="margin-top: 20px;">
+						<div class="col s12">
+							<h6 class="orange-text"><i class="fas fa-info-circle"></i> Scan Information</h6>
+																<div class="row">
+								<div class="col s12">
+									<div class="small">
+										<b class="orange-text">Start Time:</b> {{ v.startstr }}<br>
+										<b class="orange-text">Scan Type:</b> {{ v.scantype }}<br>
+										<b class="orange-text">Scan Protocol:</b> {{ v.protocol }}<br>
+										<b class="orange-text">Nmap version:</b> {{ v.nmapver }}<br>
+										<b class="orange-text">XML version:</b> {{ v.xmlver }}<br>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Service Details with Vulnerabilities -->
+					{% if v.services %}
+					<div class="row" style="margin-top: 20px;">
+						<div class="col s12">
+							<h6 class="cyan-text"><i class="fas fa-network-wired"></i> Service Details & Security Analysis</h6>
+							<div class="divider" style="margin-bottom: 15px;"></div>
+							
+							{% for port, service_data in v.services.items %}
+							<div class="card" style="background-color: rgba(40,40,40,0.3); margin-bottom: 15px;">
+								<div class="card-content">
+									<div class="row" style="margin-bottom: 0;">
+										<!-- Service Info Column -->
+										<div class="col s12 m4">
+											<h6 class="{% if service_data.state == 'open' %}green-text{% elif service_data.state == 'closed' %}red-text{% else %}orange-text{% endif %}">
+												<i class="fas fa-{% if service_data.state == 'open' %}door-open{% elif service_data.state == 'closed' %}door-closed{% else %}filter{% endif %}"></i> 
+												Port {{ port }} 
+												<span style="font-size: 12px;">({{ service_data.state|upper }})</span>
+											</h6>
+											<div class="small">
+												{% if service_data.state %}
+													<b>State:</b> {{ service_data.state }}<br>
+												{% endif %}
+												{% if service_data.service %}
+													<b>Service:</b> {{ service_data.service}}<br>
+												{% endif %}
+												{% if service_data.product %}
+													<b>Product:</b> {{ service_data.product }}<br>
+												{% endif %}
+												{% if service_data.version %}
+													<b>Version:</b> {{ service_data.version }}<br>
+												{% endif %}
+												{% if service_data.misc %}
+													<div class="misc-wrapper" style="margin-top: 10px;">
+														<button onclick="toggleMisc('misc_{{ port }}')" class="waves-effect waves-light btn-small blue-grey darken-3" style="margin-bottom: 10px;">
+															<i class="fas fa-code" id="icon_misc_{{ port }}"></i> Show Misc Data
+														</button>
+														<div id="misc_{{ port }}" style="display: none;">
+															<div class="code-block" style="background-color: rgba(0,0,0,0.2); 
+																						border-radius: 4px; 
+																						padding: 15px; 
+																						font-family: monospace; 
+																						white-space: pre-wrap; 
+																						word-wrap: break-word;
+																						font-size: 12px;
+																						max-height: 400px;
+																						overflow-y: auto;">
+																<div class="json-content">
+																	<pre><code>{{ service_data.misc|json_escape }}</code></pre>
+																</div>
+																<script>
+																	document.addEventListener('DOMContentLoaded', function() {
+																		var element = document.querySelector("#misc_{{ port }} .json-content pre code");
+																		var jsonStr = element.textContent;
+																		try {
+																			var jsonData = JSON.parse(jsonStr);
+																			var formattedJson = JSON.stringify(jsonData, null, 2)
+																				.replace(/&/g, '&amp;')
+																				.replace(/</g, '&lt;')
+																				.replace(/>/g, '&gt;')
+																				.replace(/("(?:[^"\\]|\\.)*")(?=:)/g, '<span style="color: #F5871F">$1</span>') // orange for keys
+																				.replace(/:\s*("(?:[^"\\]|\\.)*")(?!:)/g, ': <span style="color: #718C00">$1</span>') // green for string values
+																				.replace(/:\s*(true|false|null)/g, ': <span style="color: #4271AE">$1</span>') // blue for literals
+																				.replace(/:\s*(-?\d+\.?\d*)/g, ': <span style="color: #3E999F">$1</span>'); // cyan for numbers
+																			element.innerHTML = formattedJson;
+																		} catch (e) {
+																			console.error('Error formatting JSON:', e);
+																		}
+																	});
+																</script>
+															</div>
+														</div>
+													</div>
+												{% endif %}
+											</div>
+										</div>
+
+										<!-- Vulnerability Summary Column -->
+										<div class="col s12 m4" style="border-left: solid #555 1px; padding-left: 15px;">
+											<h6 class="red-text"><i class="fas fa-shield-alt"></i> Vulnerability Status</h6>
+											{% if service_data.vulns %}
+												<div class="small">
+													<span class="orange white-text" style="padding: 2px 6px; border-radius: 3px; font-size: 10px;">
+														Found: {{ service_data.vulns_meta.total_found }}
+													</span>
+													<span class="blue white-text" style="padding: 2px 6px; border-radius: 3px; font-size: 10px;">
+														Confidence: {{ service_data.vulns_meta.confidence }}
+													</span>
+													<div style="margin-top: 10px;">
+														<b>Sources:</b><br>
+														{% for source in service_data.vulns_meta.sources_used %}
+															<span class="grey-text">{{ source }}</span><br>
+														{% endfor %}
+													</div>
+												</div>
+											{% else %}
+												<span class="green white-text" style="padding: 2px 6px; border-radius: 3px; font-size: 10px;">
+													NO VULNERABILITIES DETECTED
+												</span>
+											{% endif %}
+										</div>
+
+										<!-- Vulnerabilities Details Column -->
+										<div class="col s12 m4" style="border-left: solid #555 1px; padding-left: 15px;">
+											<h6 class="orange-text"><i class="fas fa-exclamation-triangle"></i> Vulnerabilities</h6>
+											{% if service_data.vulns %}
+												<div class="small" style="max-height: 200px; overflow-y: auto;">
+													{% for vuln in service_data.vulns %}
+														<div style="margin-bottom: 10px; padding: 5px; background-color: rgba(60,60,60,0.3); border-radius: 3px;">
+															<span class="red white-text" style="padding: 1px 4px; border-radius: 2px; font-size: 10px;">
+																{{ vuln.id }}
+															</span>
+															<p style="margin: 5px 0; font-size: 11px;">{{ vuln.description|truncatechars:100 }}</p>
+															{% if vuln.cvss_score %}
+																<span class="orange-text">CVSS: {{ vuln.cvss_score }}</span>
+															{% endif %}
+														</div>
+													{% endfor %}
+												</div>
+											{% else %}
+												<span class="grey-text small">No vulnerabilities found</span>
+											{% endif %}
+
+											<!-- Vulnerability Checks Results -->
+											{% if service_data.vuln_checks %}
+												<div style="margin-top: 10px;">
+													<h6 class="blue-text"><i class="fas fa-check-circle"></i> Security Checks</h6>
+													{% for check_name, check_result in service_data.vuln_checks.items %}
+														<div class="small">
+															<span class="{% if check_result %}red{% else %}green{% endif %}-text">
+																<i class="fas fa-{% if check_result %}times{% else %}check{% endif %}"></i>
+															</span>
+															{{ check_name }}
+															<button onclick="toggleSecurityCheck('check_{{ port }}_{{ forloop.counter }}')" class="waves-effect waves-light btn-small blue-grey darken-3" style="margin-left: 10px;">
+																<i class="fas fa-code"></i> Details
+															</button>
+															<div id="check_{{ port }}_{{ forloop.counter }}" style="display: none; margin-top: 10px;">
+																<div class="code-block" style="background-color: rgba(0,0,0,0.2); 
+																							border-radius: 4px; 
+																							padding: 15px; 
+																							font-family: monospace; 
+																							white-space: pre-wrap; 
+																							word-wrap: break-word;
+																							font-size: 12px;
+																							max-height: 400px;
+																							overflow-y: auto;">
+																	<pre><code>{{ check_result|json_escape }}</code></pre>
+																</div>
+																<script>
+																	document.addEventListener('DOMContentLoaded', function() {
+																		var element = document.querySelector("#check_{{ port }}_{{ forloop.counter }} pre code");
+																		var jsonStr = element.textContent;
+																		try {
+																			var jsonData = JSON.parse(jsonStr);
+																			var formattedJson = JSON.stringify(jsonData, null, 2)
+																				.replace(/&/g, '&amp;')
+																				.replace(/</g, '&lt;')
+																				.replace(/>/g, '&gt;')
+																				.replace(/("(?:[^"\\]|\\.)*")(?=:)/g, '<span style="color: #F5871F">$1</span>')
+																				.replace(/:\s*("(?:[^"\\]|\\.)*")(?!:)/g, ': <span style="color: #718C00">$1</span>')
+																				.replace(/:\s*(true|false|null)/g, ': <span style="color: #4271AE">$1</span>')
+																				.replace(/:\s*(-?\d+\.?\d*)/g, ': <span style="color: #3E999F">$1</span>');
+																			element.innerHTML = formattedJson;
+																		} catch (e) {
+																			console.error('Error formatting JSON:', e);
+																		}
+																	});
+																</script>
+															</div>
+														</div>
+													{% endfor %}
+												</div>
+											{% endif %}
+										</div>
+									</div>
+								</div>
+							</div>
+							{% endfor %}
+						</div>
+					</div>
+					{% endif %}
+				</div>
+
+				<div class="card-action">
+					<ul id="hostdd{{ v.hostindex }}" class="dropdown-content" style="min-width:200px;">
+						<li><a href="#!" onclick="setLabel('host', 'Vulnerable', '{{ v.addressmd5 }}', {{ v.hostindex }})"><span class="tmlabel red">Vulnerable</span></a></li>
+						<li><a href="#!" onclick="setLabel('host', 'Critical', '{{ v.addressmd5 }}', {{ v.hostindex }})"><span class="tmlabel black">Critical</span></a></li>
+						<li><a href="#!" onclick="setLabel('host', 'Warning', '{{ v.addressmd5 }}', {{ v.hostindex }})"><span class="tmlabel orange">Warning</span></a></li>
+						<li><a href="#!" onclick="setLabel('host', 'Checked', '{{ v.addressmd5 }}', {{ v.hostindex }})"><span class="tmlabel blue">Checked</span></a></li>
+						<li><a class="grey-text" href="#!" onclick="removeLabel('host', '{{ v.addressmd5 }}', {{ v.hostindex }})">Remove label</a></li>
+						<li class="divider"></li>
+						<li><a class="grey-text" href="#!" onclick="javascript:openNotes('{{ v.addressmd5 }}', '{{ v.notesb64 }}');">Insert notes</a></li>
+						{{ v.removenotes|safe }}
+					</ul>
+					<a href="#!" class="grey-text dropdown-trigger" data-target="hostdd{{ v.hostindex }}"><i class="fas fa-ellipsis-v"></i> Actions</a>
+
+					{{ v.notesout|safe }}
+
+					{{ v.cveout|safe }}
+
+					<!-- NEW: Enhanced Security Summary in Actions -->
+					<!-- {% for host in scan_hosts %}
+						{% if host.ip == i %}
+							{% if host.total_critical > 0 or host.total_high > 0 or host.total_medium > 0 %}
+							<a href="#!" class="red-text" onclick="showHostSecurity('{{ i }}')">
+								<i class="fas fa-exclamation-triangle"></i> 
+								{% if host.total_critical > 0 %}{{ host.total_critical }} Critical{% endif %}
+								{% if host.total_high > 0 %}{% if host.total_critical > 0 %}, {% endif %}{{ host.total_high }} High{% endif %}
+								{% if host.total_medium > 0 %}{% if host.total_critical > 0 or host.total_high > 0 %}, {% endif %}{{ host.total_medium }} Medium{% endif %}
+							</a>
+							{% endif %}
+						{% endif %}
+					{% endfor %} -->
+				</div>
+			</div>
+		{% endfor %}
+	</div>
+
+	<!-- Enhanced Modals -->
+	<div id="securityModal" class="modal modal-fixed-footer" style="background-color: rgba(40,40,40,0.95);">
+		<div class="modal-content">
+			<h4 id="securityModalTitle" class="red-text">Host Security Summary</h4>
+			<div id="securityModalBody"></div>
+		</div>
+		<div class="modal-footer" style="background-color: rgba(60,60,60,0.95);">
+			<a href="#!" class="modal-close waves-effect waves-red btn red">Close</a>
+		</div>
+	</div>
+
+	<div id="activescancard" class="small grey-text" style="bottom:0px;left:0px;width:100%;position:fixed;background-color:rgba(0,0,0,0.8);padding:10px;z-index:999;display:none;">
+		<b>Active Scan:</b>
+		<div id="activescan">Scanning in progress...</div>
+	</div>
+
+	<script>
+		// Enhanced JavaScript functionality
+		function toggleVulns(elementId) {
+			const element = document.getElementById(elementId);
+			const icon = document.getElementById('icon_' + elementId);
+			
+			if (element.style.display === 'none') {
+				element.style.display = 'block';
+				icon.className = 'fas fa-chevron-down';
+			} else {
+				element.style.display = 'none';
+				icon.className = 'fas fa-chevron-right';
+			}
+		}
+
+		function toggleSecurityCheck(elementId) {
+			const element = document.getElementById(elementId);
+			if (element.style.display === 'none') {
+				element.style.display = 'block';
+			} else {
+				element.style.display = 'none';
+			}
+		}
+
+		function showHostSecurity(ip) {
+			document.getElementById('securityModalTitle').innerHTML = 'Security Summary - ' + ip;
+			document.getElementById('securityModalBody').innerHTML = '<p>Loading security details for ' + ip + '...</p>';
+			var modalInstance = M.Modal.getInstance(document.getElementById('securityModal'));
+			if (modalInstance) {
+				modalInstance.open();
+			}
+		}
+
+		function toggleMisc(elementId) {
+			const element = document.getElementById(elementId);
+			const icon = document.getElementById('icon_' + elementId);
+			
+			if (element.style.display === 'none') {
+				element.style.display = 'block';
+				icon.className = 'fas fa-code-branch';
+			} else {
+				element.style.display = 'none';
+				icon.className = 'fas fa-code';
+			}
+		}
+
+		// Initialize enhanced components
+		$(document).ready(function(){
+			$('.modal').modal();
+			$('.dropdown-trigger').dropdown({
+				constrainWidth: false,
+				coverTrigger: false,
+				closeOnClick: true,
+				container: document.body,
+				hover: false
+			});
+			$('.tooltipped').tooltip();
+		});
+
+		// Auto-refresh functionality for active scans (only if endpoints exist)
+		function checkActiveScan() {
+			// Only attempt to check if the endpoint is available
+			if (typeof scanStatusEndpoint !== 'undefined') {
+				fetch('/api/scan-status/')
+				.then(response => response.json())
+				.then(function(data) {
+					if (data.active) {
+						document.getElementById('activescancard').style.display = 'block';
+						document.getElementById('activescan').innerHTML = data.status;
+					} else {
+						document.getElementById('activescancard').style.display = 'none';
+					}
+				})
+				.catch(function(error) {
+					// Silently handle missing endpoint
+					document.getElementById('activescancard').style.display = 'none';
+				});
+			}
+		}
+
+		// Only start interval if scan status checking is available
+		if (typeof scanStatusEndpoint !== 'undefined') {
+			setInterval(checkActiveScan, 5000);
+		}
+	</script>
+
+	<style>
+		.card {
+			transition: all 0.3s ease;
+			position: relative;
+		}
+		
+		.card:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+		}
+		
+		.collapsible-header:hover {
+			background-color: rgba(255,255,255,0.1);
+		}
+		
+		.code {
+			font-family: 'Courier New', monospace;
+			font-size: 11px;
+			line-height: 1.4;
+		}
+
+		.code-block {
+			position: relative;
+			transition: all 0.3s ease;
+		}
+
+		.code-block:hover {
+			box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+		}
+
+		.json-content {
+			line-height: 1.5;
+		}
+
+		.btn-small {
+			text-transform: none;
+			padding: 0 12px;
+			height: 32px;
+			line-height: 32px;
+			font-size: 13px;
+		}
+
+		.btn-small i {
+			font-size: 16px;
+			margin-right: 6px;
+		}
+
+		/* Dropdown fixes */
+		.dropdown-content {
+			background-color: #2b2b2b;
+			border: 1px solid #444;
+			box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+			z-index: 9999 !important;
+		}
+
+		.dropdown-content li {
+			min-height: 36px;
+		}
+
+		.dropdown-content li > a {
+			color: #fff;
+			padding: 8px 16px;
+			font-size: 13px;
+		}
+
+		.dropdown-content li:hover {
+			background-color: rgba(255,255,255,0.1);
+		}
+
+		.dropdown-content .divider {
+			background-color: #444;
+			margin: 4px 0;
+		}
+
+		/* Card action fixes */
+		.card-action {
+			position: relative;
+			z-index: 1;
+			background-color: rgba(40,40,40,0.95);
+		}
+
+		/* Fix dropdown trigger positioning */
+		.dropdown-trigger {
+			position: relative;
+			z-index: 2;
+		}
+	</style>
+	
+{% endblock %}
