@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, api, network, functions_nmap, ndiff
+from . import views, api, network,  ndiff
 
 urlpatterns = [
 	path('', views.main_index, name='main_index'),

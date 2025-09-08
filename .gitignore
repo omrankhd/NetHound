@@ -86,3 +86,12 @@ target/
 .ipynb_checkpoints
 
 static/*.pdf
+
+
+*.pyc
+*.pyo
+*.pyd
+    
+# Python cache directories in all subdirectories
+**/__pycache__/
+*/**/__pycache__/

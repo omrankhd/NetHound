@@ -41,44 +41,6 @@ async def run_rustscan(target: str, options: list, output_dir: str, top_ports: b
         print(f"[!] Error scanning {target}: {e}")
         return None
 
-# async def parse_and_save(xml_file: str, json_file: str):
-#     async with aiofiles.open(xml_file, mode='r') as f:
-#         xml_content = await f.read()
-#         data = xmltodict.parse(xml_content)
-
-#     hosts = data.get('nmaprun', {}).get('host', [])
-#     if not isinstance(hosts, list):
-#         hosts = [hosts]
-
-#     result = []
-#     for host in hosts:
-#         address_data = host.get('address', {})
-#         if isinstance(address_data, list):
-#             ip = next((a['@addr'] for a in address_data if a.get('@addrtype') == 'ipv4'), None)
-#         else:
-#             ip = address_data.get('@addr')
-#         ports = host.get('ports', {}).get('port', [])
-#         if not isinstance(ports, list):
-#             ports = [ports]
-
-#         open_ports = []
-#         for port in ports:
-#             if port.get('state', {}).get('@state') == 'open':
-#                 service = port.get('service', {})
-#                 open_ports.append({
-#                     "port": port.get('@portid'),
-#                     "protocol": port.get('@protocol'),
-#                     "service": service.get('@name', 'unknown'),
-#                     "product": service.get('@product', 'unknown'),
-#                     "version": service.get('@version', 'unknown'),
-#                 })
-
-#         if open_ports:
-#             result.append({"ip": ip, "open_ports": open_ports})
-
-#     async with aiofiles.open(json_file, "w") as f:
-#         await f.write(json.dumps(result, indent=4))
-#     print(f"[✓] Saved JSON: {json_file}")
 
 async def scan_target(target: str, options: list, output_dir: str, top_ports: bool = False, ports: str = None):
         xml_template = await run_rustscan(target, options, output_dir, top_ports, ports)
