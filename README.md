@@ -64,13 +64,11 @@ NetHound is designed with a split architecture:
 - The Ingestor runs on the host machine for direct network access and better performance
 - The Dashboard typically runs in Docker for easy deployment and isolation
 
+first make the output directory
 ### Recommended Setup (Default)
 
 1. Navigate to the /opt directory and clone the repository:
 ```bash
-
-sudo mkdir /opt/xml
-
 cd /opt
 sudo git clone https://github.com/omrankhd/NetHound.git nethounddashboard
 cd nethounddashboard
@@ -153,7 +151,7 @@ Note: Running the Dashboard directly on the host machine is not recommended as i
 
 1. Launch the GUI scanner:
 ```bash
-python gui.py
+sudo python gui.py
 ```
 
 2. Configure scan settings:
