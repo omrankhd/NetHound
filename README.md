@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="nethoundreport/static/logoblack.png" alt="NetHound Logo" width="400"/>
+</p>
+
 # NetHound - Advanced Network Scanning and Visualization Dashboard
 
 NetHound is a comprehensive network security tool divided into two main components:
