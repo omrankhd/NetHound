@@ -250,6 +250,7 @@ def details(request, address):
 
 				v,z,e = '','','<i class="grey-text">N/A</i>'
 				if p['state']['@state'] == 'open':
+					cpe=''
 					if 'service' in p:
 						if '@version' in p['service']:
 							v = p['service']['@version']
