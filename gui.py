@@ -53,8 +53,10 @@ def run_script():
         messagebox.showerror("Input Error", "Output Directory field cannot be empty.")
         return
     
+    
     output_dir_clean = output_dir_input.strip("/").replace("../", "").replace("..\\", "")
     output_dir_clean = output_dir_clean.replace("opt/xml/", "").replace("opt\\xml\\", "")
+    output_dir_clean = output_dir_clean.replace(" ", "_") 
     output_dir = os.path.join("/opt/xml", output_dir_clean)
     output_dir_name = output_dir_clean
 
@@ -64,7 +66,7 @@ def run_script():
     if not cve_output_name.endswith('.json'):
         cve_output_name+='.json'
     cve_output = output_dir +"/"+"CVE_"+cve_output_name
-    print(cve_output)
+    
     
     selected_options = []
     if sV_var.get():
@@ -86,7 +88,12 @@ def run_script():
     print(selected_options)
     options_str = " ".join(f"'{opt}'" for opt in selected_options)
     print(options_str)
-    ports = ports_entry.get().strip()
+     
+   
+    clean_ports = ports_entry.get().strip().replace(' ', ',')
+    while ',,' in clean_ports:
+        clean_ports = clean_ports.replace(',,', ',')
+    ports = clean_ports.strip(',')
     use_top = top_var.get()
 
     if ports and use_top:
