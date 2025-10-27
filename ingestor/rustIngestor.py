@@ -14,6 +14,7 @@ async def run_rustscan(target: str, options: list, output_dir: str, top_ports: b
         "-a", target,
         "-b", "2000",
         "-t", "2000",
+        "--no-banner",  
         "--ulimit", "5500"
     ]
 

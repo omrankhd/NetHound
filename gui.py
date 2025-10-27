@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import tkinter as tk
-from tkinter import  messagebox
+from tkinter import messagebox
 from tkinter import ttk
 from PIL import Image, ImageTk  # type: ignore # Pillow library
 import subprocess
@@ -222,7 +222,7 @@ def configure_scroll_region(event):
     canvas.configure(scrollregion=canvas.bbox("all"))
 
 def configure_frame_width(event):
-    canvas.itemconfig(canvas_frame, width=event.width)  # 40 is for padding
+    canvas.itemconfig(canvas_frame, width=event.width)  
 
 
 scrollable_frame.bind("<Configure>", configure_scroll_region)
@@ -323,7 +323,7 @@ O_var = tk.BooleanVar()
 Pn_var = tk.BooleanVar()  
 T4_var = tk.BooleanVar()  
 
-# Create and position checkboxes in two columns inside options_frame
+
 tk.Checkbutton(options_frame, text="-sV (Version detection)", variable=sV_var, bg="#ffffff").grid(row=0, column=0, sticky="w", padx=5)
 tk.Checkbutton(options_frame, text="-sS (SYN scan)", variable=sS_var, bg="#ffffff").grid(row=1, column=0, sticky="w", padx=5)
 tk.Checkbutton(options_frame, text="-sT (TCP connect scan)", variable=sT_var, bg="#ffffff").grid(row=2, column=0, sticky="w", padx=5)
@@ -335,21 +335,21 @@ tk.Checkbutton(options_frame, text="-Pn (No ping)", variable=Pn_var, bg="#ffffff
 tk.Checkbutton(options_frame, text="-T4 (Aggressive timing)", variable=T4_var, bg="#ffffff").grid(row=3, column=1, sticky="w", padx=5)
 
 
-# Additional options frame
+
 additional_frame = tk.LabelFrame(frame, text="Ports Settings", bg="#ffffff", padx=10, pady=5)
 additional_frame.grid(row=5, column=0, columnspan=3, sticky="ew", **padding)
 
-# Top ports settings
+
 top_var = tk.BooleanVar()
 tk.Checkbutton(additional_frame, text="Use Top Ports", variable=top_var, bg="#ffffff").grid(row=0, column=0, sticky="w", **padding)
 
-# Custom ports
+
 tk.Label(additional_frame, text="Custom Ports:", bg="#ffffff").grid(row=1, column=0, sticky="w", **padding)
 ports_entry = tk.Entry(additional_frame, width=50)
 ports_entry.grid(row=1, column=1, columnspan=2, sticky="ew", **padding)
 
 """ uncomment to choose cve output file name"""
-# CVE settings frame
+## CVE settings frame
 # cve_frame = tk.LabelFrame(frame, text="CVE Settings", bg="#ffffff", padx=10, pady=5)
 # cve_frame.grid(row=6, column=0, columnspan=3, sticky="ew", **padding)
 

@@ -24,6 +24,13 @@ def login(request):
 	return render(request, 'nethoundreport/nmap_auth.html', r)
 
 def setscanpath(request, scanname):
+    r = {}
+
+    if 'auth' not in request.session:
+        return render(request, 'nethoundreport/nmap_auth.html', r)
+    else:
+        r['auth'] = True
+
     print("Scan name:", scanname)
     base_path =  request.session['path']#'/opt/xml'
     

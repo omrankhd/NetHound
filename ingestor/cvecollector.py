@@ -65,6 +65,7 @@ async def check_services(hosts):
             print(version)
             # Run service detection for this port (returns a list of dicts)
             misc_results = checkservice3.run_service_detection(ip, str(port))
+            # misc_results = []
             svc["Misc"] = misc_results
             
             # Find the result for the current port
@@ -109,15 +110,7 @@ async def check_services(hosts):
             if any(x in name for x in ["smb", "netbios", "microsoft-ds", "samba"]) or port == 445:
                 svc["SMB vulnerability check"] = check_smb.run_smb_vuln_scan(ip, port, timeout=10)
             
-            # Query Vulners
-            # if product and version:
-            #     print(f"Querying Vulners for {product} {version} on {ip}:{port}")
-            #     cves = query_vulners(product, version)
-            #     sleep(1)
-            #     svc.update({"cves": cves})
-            # else:
-            #     print(f"Skipping Vulners query for {ip}:{port} - missing product/version")
-            
+      
             if product:
                 print(f"Scanning vulnerabilities for {product} {version} on {ip}:{port}")
                 svc["vulns"] = scanner.scan_vulnerabilities(product, version, port)
