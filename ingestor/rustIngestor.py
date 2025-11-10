@@ -8,7 +8,7 @@ import re
 
 async def run_rustscan(target: str, options: list, output_dir: str, top_ports: bool = False, ports: str = None):
     print(f"[+] Scanning {target} with RustScan")
-
+    
     cmd = [
         "rustscan",
         "-a", target,
@@ -21,7 +21,8 @@ async def run_rustscan(target: str, options: list, output_dir: str, top_ports: b
     if top_ports:
         cmd.append("--top")
     if ports:
-        cmd += ["-p", ports]
+        port_flag = "-r" if '-' in ports else "-p"
+        cmd += [port_flag, ports]
 
     
     # subnet_folder = os.path.join("/opt/xml/",output_dir)

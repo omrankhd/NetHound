@@ -166,35 +166,35 @@ class TelnetVulnScanner:
                 'description': 'Telnet traffic is unencrypted'
             }
     
-    def check_dos_vulnerability(self) -> Dict:
-        """Check for potential DoS vulnerabilities."""
-        try:
-            # Send oversized data to check for buffer overflow
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(self.timeout)
-            sock.connect((self.host, self.port))
+    # def check_dos_vulnerability(self) -> Dict:
+    #     """Check for potential DoS vulnerabilities."""
+    #     try:
+    #         # Send oversized data to check for buffer overflow
+    #         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    #         sock.settimeout(self.timeout)
+    #         sock.connect((self.host, self.port))
             
-            # Send large payload
-            large_payload = "A" * 10000
-            sock.send(large_payload.encode())
-            time.sleep(2)
+    #         # Send large payload
+    #         large_payload = "A" * 10000
+    #         sock.send(large_payload.encode())
+    #         time.sleep(2)
             
-            # Try to send normal data
-            sock.send(b"test\r\n")
-            response = sock.recv(1024)
-            sock.close()
+    #         # Try to send normal data
+    #         sock.send(b"test\r\n")
+    #         response = sock.recv(1024)
+    #         sock.close()
             
-            return {
-                'dos_vulnerable': False,
-                'severity': 'INFO',
-                'description': 'No obvious DoS vulnerability detected'
-            }
-        except Exception as e:
-            return {
-                'dos_vulnerable': True,
-                'severity': 'MEDIUM',
-                'description': f'Potential DoS vulnerability: {str(e)}'
-            }
+    #         return {
+    #             'dos_vulnerable': False,
+    #             'severity': 'INFO',
+    #             'description': 'No obvious DoS vulnerability detected'
+    #         }
+    #     except Exception as e:
+    #         return {
+    #             'dos_vulnerable': True,
+    #             'severity': 'MEDIUM',
+    #             'description': f'Potential DoS vulnerability: {str(e)}'
+    #         }
     
     def scan(self) -> Dict:
         """Run comprehensive vulnerability scan."""
@@ -237,15 +237,10 @@ class TelnetVulnScanner:
         results['vulnerabilities'].append(encryption_check)
         
         # Check for DoS vulnerability
-        dos_check = self.check_dos_vulnerability()
-        results['vulnerabilities'].append(dos_check)
+        # dos_check = self.check_dos_vulnerability()
+        # results['vulnerabilities'].append(dos_check)
         
-        # General security recommendations
-        results['vulnerabilities'].append({
-            'type': 'Protocol Security',
-            'description': 'Telnet is inherently insecure - consider using SSH',
-            'severity': 'HIGH'
-        })
+       
         
         return results
     
@@ -282,12 +277,7 @@ class TelnetVulnScanner:
             if count > 0:
                 print(f"  {severity}: {count}")
         
-        print("\nRecommendations:")
-        print("  1. Disable telnet service if not required")
-        print("  2. Use SSH instead of telnet for remote access")
-        print("  3. Implement strong authentication")
-        print("  4. Use network segmentation and firewalls")
-        print("  5. Monitor and log all telnet connections")
+       
 
 def run_telnet_vuln_scan(server: str, port: int = 23, timeout: int = 10) -> dict:
     """

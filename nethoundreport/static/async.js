@@ -24,7 +24,7 @@ $(document).ready(function() {
 		}
 	});
 
-	active_scan_timer = setInterval(function() { checkActiveScan(); }, 2000);
+	// active_scan_timer = setInterval(function() { checkActiveScan(); }, 2000);
 	$('select').formSelect();
 
 

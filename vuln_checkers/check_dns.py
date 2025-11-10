@@ -87,7 +87,7 @@ class DNSVulnerabilityScanner:
         
         # Common domains to test zone transfer against
         test_domains = ['example.com', 'test.com', 'localhost']
-        
+        print(self.timeout)
         for domain in test_domains:
             try:
                 zone = dns.zone.from_xfr(dns.query.xfr(self.target_server, domain, timeout=self.timeout))

@@ -201,10 +201,10 @@
 												{% endif %}
 												{% if service_data.misc %}
 													<div class="misc-wrapper" style="margin-top: 10px;">
-														<button onclick="toggleMisc('misc_{{ port }}')" class="waves-effect waves-light btn-small blue-grey darken-3" style="margin-bottom: 10px;">
-															<i class="fas fa-code" id="icon_misc_{{ port }}"></i> Show Misc Data
+														<button onclick="toggleMisc('misc_{{ v.hostindex }}_{{ port }}')" class="waves-effect waves-light btn-small blue-grey darken-3" style="margin-bottom: 10px;">
+															<i class="fas fa-code" id="icon_misc_{{ v.hostindex }}_{{ port }}"></i> Show Misc Data
 														</button>
-														<div id="misc_{{ port }}" style="display: none;">
+														<div id="misc_{{ v.hostindex }}_{{ port }}" style="display: none;">
 															<div class="code-block" style="background-color: rgba(0,0,0,0.2); 
 																						border-radius: 4px; 
 																						padding: 15px; 
@@ -219,7 +219,7 @@
 																</div>
 																<script>
 																	document.addEventListener('DOMContentLoaded', function() {
-																		var element = document.querySelector("#misc_{{ port }} .json-content pre code");
+																		var element = document.querySelector("#misc_{{ v.hostindex }}_{{ port }} .json-content pre code");
 																		var jsonStr = element.textContent;
 																		try {
 																			var jsonData = JSON.parse(jsonStr);
@@ -279,7 +279,7 @@
 															<span class="red white-text" style="padding: 1px 4px; border-radius: 2px; font-size: 10px;">
 																{{ vuln.id }}
 															</span>
-															<p style="margin: 5px 0; font-size: 11px;">{{ vuln.description|truncatechars:100 }}</p>
+															<p style="margin: 5px 0; font-size: 11px;">{{ vuln.description|truncatechars:2000 }}</p>
 															{% if vuln.cvss_score %}
 																<span class="orange-text">CVSS: {{ vuln.cvss_score }}</span>
 															{% endif %}
@@ -300,10 +300,11 @@
 																<i class="fas fa-{% if check_result %}times{% else %}check{% endif %}"></i>
 															</span>
 															{{ check_name }}
-															<button onclick="toggleSecurityCheck('check_{{ port }}_{{ forloop.counter }}')" class="waves-effect waves-light btn-small blue-grey darken-3" style="margin-left: 10px;">
+															<button onclick="toggleSecurityCheck('check_{{ v.hostindex }}_{{ port }}_{{ forloop.counter }}')" class="waves-effect waves-light btn-small blue-grey darken-3" style="margin-left: 10px;">
 																<i class="fas fa-code"></i> Details
 															</button>
-															<div id="check_{{ port }}_{{ forloop.counter }}" style="display: none; margin-top: 10px;">
+															<div id="check_{{ v.hostindex }}_{{ port }}_{{ forloop.counter }}" style="display: none; margin-top: 10px;">
+																
 																<div class="code-block" style="background-color: rgba(0,0,0,0.2); 
 																							border-radius: 4px; 
 																							padding: 15px; 
@@ -317,7 +318,7 @@
 																</div>
 																<script>
 																	document.addEventListener('DOMContentLoaded', function() {
-																		var element = document.querySelector("#check_{{ port }}_{{ forloop.counter }} pre code");
+																		var element = document.querySelector("#check_{{ v.hostindex }}_{{ port }}_{{ forloop.counter }} pre code");
 																		var jsonStr = element.textContent;
 																		try {
 																			var jsonData = JSON.parse(jsonStr);
@@ -461,30 +462,30 @@
 		});
 
 		// Auto-refresh functionality for active scans (only if endpoints exist)
-		function checkActiveScan() {
-			// Only attempt to check if the endpoint is available
-			if (typeof scanStatusEndpoint !== 'undefined') {
-				fetch('/api/scan-status/')
-				.then(response => response.json())
-				.then(function(data) {
-					if (data.active) {
-						document.getElementById('activescancard').style.display = 'block';
-						document.getElementById('activescan').innerHTML = data.status;
-					} else {
-						document.getElementById('activescancard').style.display = 'none';
-					}
-				})
-				.catch(function(error) {
-					// Silently handle missing endpoint
-					document.getElementById('activescancard').style.display = 'none';
-				});
-			}
-		}
+		// function checkActiveScan() {
+		// 	// Only attempt to check if the endpoint is available
+		// 	if (typeof scanStatusEndpoint !== 'undefined') {
+		// 		fetch('/api/scan-status/')
+		// 		.then(response => response.json())
+		// 		.then(function(data) {
+		// 			if (data.active) {
+		// 				document.getElementById('activescancard').style.display = 'block';
+		// 				document.getElementById('activescan').innerHTML = data.status;
+		// 			} else {
+		// 				document.getElementById('activescancard').style.display = 'none';
+		// 			}
+		// 		})
+		// 		.catch(function(error) {
+		// 			// Silently handle missing endpoint
+		// 			document.getElementById('activescancard').style.display = 'none';
+		// 		});
+		// 	}
+		// }
 
-		// Only start interval if scan status checking is available
-		if (typeof scanStatusEndpoint !== 'undefined') {
-			setInterval(checkActiveScan, 5000);
-		}
+		// // Only start interval if scan status checking is available
+		// if (typeof scanStatusEndpoint !== 'undefined') {
+		// 	setInterval(checkActiveScan, 5000);
+		// }
 	</script>
 
 	<style>

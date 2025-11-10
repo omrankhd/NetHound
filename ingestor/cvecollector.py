@@ -61,33 +61,26 @@ async def check_services(hosts):
             port = svc["port"]
             product = svc.get("product")
             version = svc.get("version")
-            print(product)
-            print(version)
-            # Run service detection for this port (returns a list of dicts)
+    
+            # Run service detection for this port
             misc_results = checkservice3.run_service_detection(ip, str(port))
-            # misc_results = []
             svc["Misc"] = misc_results
             
-            # Find the result for the current port
+            # Process detection results if available
             if misc_results:
-                # Option 1: Use first result (if the function returns results for the specific port only)
                 result = misc_results[0]
-                
-                # Handle product assignment
-                if not product and result:
-                    product = result.get("service", "")
-                    if product:
-                        svc.update({"product": product})
-                
-                if product == "Unknown":
-                    product = svc.get("service", "")
-                
-                # Handle version assignment - check if version is already assigned or is "Unknown"
-                if (not version or version == "Unknown") and result:
-                    new_version = result.get("version", None)
-                    if new_version:
-                        version = new_version
-                        svc.update({"version": version})
+        
+                # Update product if missing, empty, or "Unknown"
+                if not product or product == "Unknown":
+                    detected_product = result.get("service")
+                    if detected_product:
+                        svc["product"] = detected_product
+        
+                # Update version if missing, empty, or "Unknown"
+                if not version or version == "Unknown":
+                    detected_version = result.get("version")
+                    if detected_version:
+                        svc["version"] = detected_version
             
             print(product)
             print(version)

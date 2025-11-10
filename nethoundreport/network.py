@@ -85,8 +85,8 @@ def visjs(request):
 
 					# Optional: add service/product/version/extrainfo
 					if 'service' in p:
-						product = p['service'].get('@product', 'No Product')
-						version = p['service'].get('@version', 'No Version')
+						product = p['service'].get('@product', '')
+						version = p['service'].get('@version', '')
 						extrainfo = p['service'].get('@extrainfo', '')
 
 						label = f"{product} / {version}\\n{extrainfo}"

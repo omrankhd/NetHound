@@ -7,6 +7,7 @@ import urllib.request
 import urllib.error
 import sys
 from typing import List, Dict, Any, Optional, Tuple, Union
+from . import scrapper
 
 class EnhancedServiceDetector:
     def __init__(self, timeout=5):
@@ -31,10 +32,27 @@ class EnhancedServiceDetector:
         except Exception:
             return False
 
+    def _update_service_info_from_scrapper(self, port: int, service_info: dict) -> dict:
+        """Update service information from scrapper data"""
+        try:
+            port_info = scrapper.get_port_info(port)
+            
+            if port_info and isinstance(port_info, dict):
+                # Update service info from dictionary
+                if 'Service' in port_info:
+                    service_info['service'] = port_info['Service']
+                if 'Details' in port_info:
+                    service_info['details']['description'] = port_info['Details']
+                if 'Protocol' in port_info:
+                    service_info['details']['protocol'] = port_info['Protocol']
+                service_info['confidence'] = 'High'
+        except Exception as e:
+            service_info['details']['scrapper_error'] = str(e)
+        return service_info
+
     def detect_service_version(self, ip, port):
         """Main service version detection function"""
         print(f"Analyzing port {port}...")
-        
         
         service_info = {
             'port': port,
@@ -43,6 +61,9 @@ class EnhancedServiceDetector:
             'details': {},
             'confidence': 'Low'
         }
+        
+        # Update service info from scrapper
+        service_info = self._update_service_info_from_scrapper(port, service_info)
 
         
         if port == 80 or port == 8080:

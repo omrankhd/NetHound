@@ -489,8 +489,20 @@ def main_index(request, subpath="",filterservice="", filterportid=""):
 		r['tr'] = {}
 		xmlfilescount = 0
 		foldercount = 0
+
+		# Check if path exists
+		if not os.path.exists(rpath):
+			r['error'] = f"Path does not exist: {html.escape(rpath)}"
+			return render(request, 'nethoundreport/browser.html', r)
+
 		# for folders 
-		for entry in os.listdir(rpath):
+		try:
+			entries = os.listdir(rpath)
+		except OSError as e:
+			r['error'] = f"Error accessing directory: {html.escape(str(e))}"
+			return render(request, 'nethoundreport/browser.html', r)
+
+		for entry in entries:
 			full_entry_path = os.path.join(rpath, entry)
 			if os.path.isdir(full_entry_path):
 				foldercount += 1 
@@ -511,8 +523,14 @@ def main_index(request, subpath="",filterservice="", filterportid=""):
 				}
 
 		# for files
-		for fname in os.listdir(rpath): 
-			if not fname.endswith('.xml') :
+		try:
+			files = os.listdir(rpath)
+		except OSError as e:
+			r['error'] = f"Error accessing directory: {html.escape(str(e))}"
+			return render(request, 'nethoundreport/browser.html', r)
+
+		for fname in files:
+			if not fname.endswith('.xml'):
 				continue
 
 			xmlfilescount += 1
@@ -1157,16 +1175,6 @@ def scan_diff(request, f1, f2):
 		r['f2'] = ''
 
 	return render(request, 'nethoundreport/nmap_ndiff.html', r)
-
-def about(request):
-	r = {}
-
-	if 'auth' not in request.session:
-		return render(request, 'nethoundreport/nmap_auth.html', r)
-	else:
-		r['auth'] = True
-
-	return render(request, 'nethoundreport/nmap_about.html', r)
 
 
 		
