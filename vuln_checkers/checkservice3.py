@@ -74,7 +74,7 @@ class EnhancedServiceDetector:
             return self._detect_ssh_version(ip, port, service_info)
         elif port == 21:
             return self._detect_ftp_version(ip, port, service_info)
-        elif port == 25 or port == 587 or port == 465:
+        elif port == 25 or port == 587 or port == 465  or port == 8825 :
             return self._detect_smtp_version(ip, port, service_info)
         elif port == 110 or port == 995:
             return self._detect_pop3_version(ip, port, service_info)

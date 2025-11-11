@@ -61,27 +61,32 @@ async def check_services(hosts):
             port = svc["port"]
             product = svc.get("product")
             version = svc.get("version")
-    
+
             # Run service detection for this port
             misc_results = checkservice3.run_service_detection(ip, str(port))
             svc["Misc"] = misc_results
-            
             # Process detection results if available
             if misc_results:
                 result = misc_results[0]
-        
+                if not name or name == "":
+                    detected_service = result.get("service")
+                    if detected_service:
+                        svc["service"] = detected_service
+                        name = detected_service
                 # Update product if missing, empty, or "Unknown"
                 if not product or product == "Unknown":
                     detected_product = result.get("service")
                     if detected_product:
                         svc["product"] = detected_product
+                        product = detected_product
         
                 # Update version if missing, empty, or "Unknown"
                 if not version or version == "Unknown":
                     detected_version = result.get("version")
                     if detected_version:
                         svc["version"] = detected_version
-            
+                        version = detected_version
+            print(name)
             print(product)
             print(version)
             
@@ -97,7 +102,7 @@ async def check_services(hosts):
             if "domain" in name or port == 53 or port == 5353:
                 svc["DNS vulnerability check"] = check_dns.run_dns_vuln_scan(ip)
             
-            if "smtp" in name or port == 25:
+            if any(x in name for x in ["smtp", "smtpd", "SMTP"]) or port == 25:
                 svc["SMTP vulnerability check"] = check_smtp.run_smtp_vuln_scan(ip, port, timeout=10)
             
             if any(x in name for x in ["smb", "netbios", "microsoft-ds", "samba"]) or port == 445:
