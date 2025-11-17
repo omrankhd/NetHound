@@ -68,24 +68,57 @@ class SMTPVulnerabilityChecker:
     def check_vrfy_command(self) -> Tuple[bool, List[str]]:
         """Check if VRFY command is enabled (user enumeration)"""
         try:
-            server = smtplib.SMTP(self.host, self.port, timeout=self.timeout)
-            server.helo("test.example.com")
-            
-            test_users = ['admin', 'root', 'test', 'user', 'postmaster']
-            valid_users = []
-            vrfy_enabled = False
-            
-            for user in test_users:
-                try:
-                    code, response = server.verify(user)
-                    vrfy_enabled = True
-                    if code == 250:
-                        valid_users.append(user)
-                except smtplib.SMTPException:
-                    pass
-            
-            server.quit()
-            return vrfy_enabled, valid_users
+            # Use context manager so connection is properly closed
+            with smtplib.SMTP(self.host, self.port, timeout=self.timeout) as server:
+                server.helo("test.example.com")
+
+                test_users = ['admin', 'root', 'test', 'user', 'postmaster']
+                valid_users: List[str] = []
+                vrfy_enabled = False
+
+                for user in test_users:
+                    try:
+                        resp = server.verify(user)
+
+                        # server.verify typically returns (code, response)
+                        if isinstance(resp, (tuple, list)) and len(resp) >= 1:
+                            code = resp[0]
+                            response = resp[1] if len(resp) > 1 else ''
+                        else:
+                            # if library returns a single value for some reason
+                            code = resp
+                            response = ''
+
+                        # Normalize code to int when possible
+                        code_int = None
+                        try:
+                            code_int = int(code)
+                        except Exception:
+                            # try to extract leading numeric code from strings like "500 5.5.1 ..."
+                            try:
+                                parts = str(code).split()
+                                if parts and parts[0].isdigit():
+                                    code_int = int(parts[0])
+                            except Exception:
+                                code_int = None
+
+                        # Consider VRFY supported only when server returns a positive 2xx reply
+                        if code_int is not None and 200 <= code_int < 300:
+                            vrfy_enabled = True
+                            # Consider 250 an explicit 'user exists' reply
+                            if code_int == 250:
+                                valid_users.append(user)
+                        else:
+                            # non-2xx reply (e.g. 5xx) - log/debug but do not mark VRFY as supported
+                            logger.debug(f"VRFY {user} returned non-2xx ({code}): {response}")
+
+                    except smtplib.SMTPException as e:
+                        # command unsupported / SMTP error for this user
+                        logger.debug(f"VRFY for {user} raised SMTPException: {e}")
+                    except Exception as e:
+                        logger.debug(f"VRFY for {user} unexpected error: {e}")
+
+                return vrfy_enabled, valid_users
         except Exception as e:
             logger.error(f"VRFY check failed: {e}")
             return False, []
